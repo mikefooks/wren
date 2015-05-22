@@ -6,7 +6,6 @@
   "devDependencies": {},
   "dependencies": {
     "async": "^1.0.0",
-    "lodash": "^3.9.1",
-    "marked": "^0.3.3"
+    "lodash": "^3.9.1"
   }
 }
