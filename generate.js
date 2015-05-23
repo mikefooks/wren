@@ -2,50 +2,77 @@
 
 var fs = require("fs"),
   path = require("path"),
-  async = require("async"),
+  _ = require("lodash"),
+  Q = require("q"),
   marked = require("marked"),
-  _ = require("lodash");
+  ejs = require("ejs");
 
-var mainContentDir = path.join(process.cwd(), "content");
+var contentDir = path.join(process.cwd(), "content"),
+  themeDir = path.join(process.cwd(), "theme");
+
+var readFile = _.partialRight(fs.readFileSync, "utf8"),
+  parseJSON = _.flow(readFile, JSON.parse),
+  compileMarkdown = _.flow(readFile, marked);
+
+var qReadDir = Q.nfbind(fs.readdir);
 
 marked.setOptions({
-  renderer: new marked.Renderer(),
-  gfm: true
+  breaks: false,
+  gfm: true,
+  smartypants: true
 });
 
-function prependSubDir (dirName) {
-  return _.partial(path.join, mainContentDir, dirName);
+/**
+ * Takes the path of an individual article/post directory as its argument,
+ * and returns a promise that resolves a collection of objects 
+ * representing the metadata/info for each article/post/what-have-you.
+ * @param  {String} dir       the name of an article directory containing 
+ *                            a frontmatter.json file. 
+ * @return {Object}           A article/post/etc. object.
+ */
+function retrieveContentInfo (dir) {
+  return {
+    dir: path.join(contentDir, dir),
+    frontmatter: parseJSON(path.join(contentDir, dir, "frontmatter.json"))
+  };
 }
 
-function parseFrontmatter (path) {
-  var frontMatter = fs.readFileSync(path, { encoding: "utf8" });
-  return JSON.parse(frontMatter);
+/**
+ * Takes a post object, reads the main.md file from its associated
+ * post/article directory, compiles the markdown in said file into 
+ * HTML and assigns that HTML to the bodyHtml attribute on the
+ * post object.
+ * @param  {Object} post      a post/article object
+ * @return {Object}           a modified post/article object      
+ */
+function assignHtml (post) {
+  return _.assign(post, {
+    bodyHtml: compileMarkdown(path.join(post.dir, "main.md"))
+  });
 }
 
-function compileMarkdown (path) {
-  var rawMarkdown = fs.readFileSync(path, { encoding: "utf8" });
-  return marked(rawMarkdown);
+function compileTemplate (context, template) {
+  return ejs.compile(template)(context);
 }
 
-async.waterfall([
-  // Reads the main content directory, and passes along the names
-  // of the content subfolders (articles).
-  function (cb) {
-    fs.readdir(mainContentDir, function (err, stat) {
-        cb(null, stat);
-    });
-  },
-  function (dirs, cb) {
-    async.mapLimit(dirs, 5, function (dir, cb) {
-      var prepend = prependSubDir(dir);
+var posts = qReadDir(contentDir)
+  .then(_.partialRight(_.map, retrieveContentInfo))
+  .then(_.partialRight(_.map, assignHtml));
 
-      cb({
-        frontmatter: parseFrontmatter(prepend("frontmatter.json")),
-        main: compileMarkdown(prepend("main.md"))
-      });
-    }, cb);
-  }], function (err, result) {
-    if (err) { return console.log(err); }
+var index = posts
+  .then(function (posts) {
+    return {
+      titles: _.pluck(posts, "frontmatter.title")
+    };
+  })
+  .then(_.partialRight(compileTemplate, readFile(path.join(themeDir, "index.ejs"))))
+  .then(function (html) {
+    console.log(html);
+  })
+  .fail(function (err) {
+    console.log(err);
+  });
 
-    console.log(result);
+posts.then(function (posts) {
+  console.log(posts);
 });
