@@ -7,14 +7,20 @@ var fs = require("fs"),
   marked = require("marked"),
   ejs = require("ejs");
 
+var config = {
+  rootUrl: "http://localhost"
+};
+
 var contentDir = path.join(process.cwd(), "content"),
+  publicDir = path.join(process.cwd(), "public"),
   themeDir = path.join(process.cwd(), "theme");
 
 var readFile = _.partialRight(fs.readFileSync, "utf8"),
   parseJSON = _.flow(readFile, JSON.parse),
   compileMarkdown = _.flow(readFile, marked);
 
-var qReadDir = Q.nfbind(fs.readdir);
+var qReadDir = Q.nfbind(fs.readdir),
+  qMkDir = Q.nfbind(fs.mkdir);
 
 marked.setOptions({
   breaks: false,
@@ -51,13 +57,37 @@ function assignHtml (post) {
   });
 }
 
+function slugify (title) {
+  var punc = /[\'\.\-]/g,
+    spaces = /[\ ]/g
+
+  return title.replace(punc, "")
+    .replace(spaces, "_")
+    .toLowerCase();
+}
+
+function assignSlug (post) {
+  return _.assign(post, {
+    slug: slugify(post.frontmatter.title)
+  });
+}
+
+function assignUrl (post) {
+  if (config.rootUrl && post.slug) {
+    return _.assign(post, {
+      url: path.join(config.rootUrl, post.slug)
+    }); 
+  }
+}
+
 function compileTemplate (context, template) {
   return ejs.compile(template)(context);
 }
 
 var posts = qReadDir(contentDir)
   .then(_.partialRight(_.map, retrieveContentInfo))
-  .then(_.partialRight(_.map, assignHtml));
+  .then(_.partialRight(_.map, assignSlug));
+
 
 var index = posts
   .then(function (posts) {
@@ -65,14 +95,9 @@ var index = posts
       titles: _.pluck(posts, "frontmatter.title")
     };
   })
-  .then(_.partialRight(compileTemplate, readFile(path.join(themeDir, "index.ejs"))))
-  .then(function (html) {
-    console.log(html);
-  })
-  .fail(function (err) {
-    console.log(err);
+  .then(function (posts) {
+    console.log(posts);
   });
-
-posts.then(function (posts) {
-  console.log(posts);
-});
+// posts.then(function (posts) {
+//   console.log(posts);
+// });
