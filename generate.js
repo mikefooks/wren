@@ -5,7 +5,9 @@ var fs = require("fs"),
   _ = require("lodash"),
   Q = require("q"),
   marked = require("marked"),
-  ejs = require("ejs");
+  ejs = require("ejs"),
+  rimraf = require("rimraf"),
+  mkdirp = require("mkdirp");
 
 var config = {
   rootUrl: "http://localhost"
@@ -20,7 +22,8 @@ var readFile = _.partialRight(fs.readFileSync, "utf8"),
   compileMarkdown = _.flow(readFile, marked);
 
 var qReadDir = Q.nfbind(fs.readdir),
-  qMkDir = Q.nfbind(fs.mkdir);
+  qMkDir = Q.nfbind(fs.mkdir),
+  qMkDirP = Q.nfbind(mkdirp);
 
 marked.setOptions({
   breaks: false,
@@ -57,47 +60,48 @@ function assignHtml (post) {
   });
 }
 
-function slugify (title) {
-  var punc = /[\'\.\-]/g,
-    spaces = /[\ ]/g
-
-  return title.replace(punc, "")
-    .replace(spaces, "_")
-    .toLowerCase();
-}
-
 function assignSlug (post) {
   return _.assign(post, {
-    slug: slugify(post.frontmatter.title)
+    slug: _.snakeCase(post.frontmatter.title)
   });
 }
 
 function assignUrl (post) {
-  if (config.rootUrl && post.slug) {
-    return _.assign(post, {
-      url: path.join(config.rootUrl, post.slug)
-    }); 
-  }
+  return _.assign(post, {
+    url: path.join(config.rootUrl, post.slug)
+  }); 
 }
 
 function compileTemplate (context, template) {
   return ejs.compile(template)(context);
 }
 
-var posts = qReadDir(contentDir)
+var publicFolderExists = fs.existsSync(publicDir);
+
+var posts = qReadDir(contentDir);
+
+var postAttrs = posts
   .then(_.partialRight(_.map, retrieveContentInfo))
-  .then(_.partialRight(_.map, assignSlug));
+  .then(_.partialRight(_.map, assignSlug))
+
+var updated = publicFolderExists ? 
+  Q.all([posts, qReadDir(publicDir)])
+    .spread(_.difference)
+    .then(_.partialRight(_.map, _.ary(_.partial(path.join, publicDir), 1)))
+    .then(_.partialRight(_.each, mkdirp.sync))
+    .then(console.log) :
+    false;
 
 
-var index = posts
-  .then(function (posts) {
-    return {
-      titles: _.pluck(posts, "frontmatter.title")
-    };
-  })
-  .then(function (posts) {
-    console.log(posts);
-  });
+// var index = posts
+//   .then(function (posts) {
+//     return {
+//       titles: _.pluck(posts, "frontmatter.title")
+//     };
+//   })
+//   .then(function (posts) {
+//     console.log(posts);
+//   });
 // posts.then(function (posts) {
 //   console.log(posts);
 // });
