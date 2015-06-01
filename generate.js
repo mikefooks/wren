@@ -23,6 +23,7 @@ var readFile = _.partialRight(fs.readFileSync, "utf8"),
 
 var qReadDir = Q.nfbind(fs.readdir),
   qMkDir = Q.nfbind(fs.mkdir),
+  qFsExists = Q.nfbind(fs.exists),
   qMkDirP = Q.nfbind(mkdirp);
 
 marked.setOptions({
@@ -76,21 +77,31 @@ function compileTemplate (context, template) {
   return ejs.compile(template)(context);
 }
 
-var publicFolderExists = fs.existsSync(publicDir);
+// Create necessary post folders in the public directory.
+function updatePublicDirStructure (posts, publicDir) {
+  return Q.all([posts, qReadDir(publicDir)])
+    .spread(_.difference)
+    .then(_.partialRight(_.map, _.ary(_.partial(path.join, publicDir), 1)))
+    .then(_.partialRight(_.each, mkdirp.sync));
+}
 
+// Get the names of all post directories in the content folder
 var posts = qReadDir(contentDir);
 
+// Build a collection of post data, frontmatter, etc.
 var postAttrs = posts
   .then(_.partialRight(_.map, retrieveContentInfo))
   .then(_.partialRight(_.map, assignSlug))
 
-var updated = publicFolderExists ? 
-  Q.all([posts, qReadDir(publicDir)])
-    .spread(_.difference)
-    .then(_.partialRight(_.map, _.ary(_.partial(path.join, publicDir), 1)))
-    .then(_.partialRight(_.each, mkdirp.sync))
-    .then(console.log) :
-    false;
+qFsExists(publicDir)
+  .then(function (exists) {
+    if (!exists) {
+      return mkdirp.sync(publicDir);
+    }
+  })
+  .then(_.partial(updatePublicDir, posts, publicDir))
+  .fail(console.log);
+
 
 
 // var index = posts
