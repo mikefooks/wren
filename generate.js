@@ -83,6 +83,27 @@ function getUpdatedPosts (contDir, pubDir) {
     .spread(_.difference);
 }
 
+function getPosts (contDir) {
+  return qReadDir(contDir)
+    .then(function (posts) {
+      return _.map(posts, function (post) {
+        var dir = path.join(contentDir, post),
+          frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
+          slug = _.snakeCase(frontmatter.title),
+          url = path.join(config.rootUrl, slug),
+          bodyHtml = compileMarkdown(path.join(dir, "main.md"));
+
+        return {
+          dir: dir,
+          frontmater: frontmatter,
+          slug: slug,
+          url: url,
+          bodyHtml: bodyHtml
+        };
+      });
+    });
+}
+
 function updatePublicDirs (updated, pubDir) {
   return Q(updated)
     .then(_.partialRight(_.map, _.ary(_.partial(path.join, pubDir), 1)))
@@ -98,24 +119,17 @@ var updated = qReadDir(contentDir),
 //   .then(_.partialRight(_.map, retrieveContentInfo))
 //   .then(_.partialRight(_.map, assignSlug))
 
-qMkDirP(publicDir)
-  .then(_.partial(getUpdatedPosts, contentDir, publicDir))
-  .then(_.partialRight(updatePublicDirs, publicDir))
-  .then(console.log)
-  .fail(console.log);
+// qMkDirP(publicDir)
+//   .then(_.partial(getUpdatedPosts, contentDir, publicDir))
+//   .then(_.partialRight(updatePublicDirs, publicDir))
+//   .then(console.log)
+//   .fail(console.log);
+
   // .then(_.partial(getUpdatedPosts, contentDir, publicDir))
   // .then(console.log)
   // .fail(console.log);
 
-// var index = posts
-//   .then(function (posts) {
-//     return {
-//       titles: _.pluck(posts, "frontmatter.title")
-//     };
-//   })
-//   .then(function (posts) {
-//     console.log(posts);
-//   });
-// posts.then(function (posts) {
-//   console.log(posts);
-// });
+
+getPosts(contentDir)
+  .then(console.log)
+  .fail(console.log);

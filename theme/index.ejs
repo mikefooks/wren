@@ -2,19 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Main Title Goes Here</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mikefooks.com</title>
+  <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css' />
+  <link rel="stylesheet" href="main.css" />
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Playing Around!</h1>
+      <h1>mikefooks.com</h1>
     </header>
-    <div class="main">
-      <% titles.forEach(function (title) { %> 
-        <h2><%= title %></h2>
-      <% }) %>
-    </div>
-    <footer></footer>
+    <main>
+      <section class="stuff">
+        <% posts.forEach(function (post) { %>
+        <article>
+          <h2><%= post.title %></h2>
+          <div class="teaser"><%= post.body_html %></div>
+        </article>
+        <% }); %>
+      </section>
+      <nav>
+        <ul>
+          <li>Stuff</li>
+          <li>List</li>
+          <li>Of</li>
+          <li>Things</li>
+        </ul>
+      </nav>
+    </main>
+    <footer><small>&copy; 2015 Mike Fooks</small></footer>
   </div>
 </body>
 </html>
