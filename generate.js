@@ -24,54 +24,14 @@ var readFile = _.partialRight(fs.readFileSync, "utf8"),
 var qReadDir = Q.nfbind(fs.readdir),
   qMkDir = Q.nfbind(fs.mkdir),
   qFsExists = Q.nfbind(fs.exists),
-  qMkDirP = Q.nfbind(mkdirp);
+  qMkDirP = Q.nfbind(mkdirp),
+  qFsWriteFile = Q.nfbind(fs.writeFile);
 
 marked.setOptions({
   breaks: false,
   gfm: true,
   smartypants: true
 });
-
-/**
- * Takes the path of an individual article/post directory as its argument,
- * and returns a promise that resolves a collection of objects 
- * representing the metadata/info for each article/post/what-have-you.
- * @param  {String} dir       the name of an article directory containing 
- *                            a frontmatter.json file. 
- * @return {Object}           A article/post/etc. object.
- */
-function retrieveContentInfo (dir) {
-  return {
-    dir: path.join(contentDir, dir),
-    frontmatter: parseJSON(path.join(contentDir, dir, "frontmatter.json"))
-  };
-}
-
-/**
- * Takes a post object, reads the main.md file from its associated
- * post/article directory, compiles the markdown in said file into 
- * HTML and assigns that HTML to the bodyHtml attribute on the
- * post object.
- * @param  {Object} post      a post/article object
- * @return {Object}           a modified post/article object      
- */
-function assignHtml (post) {
-  return _.assign(post, {
-    bodyHtml: compileMarkdown(path.join(post.dir, "main.md"))
-  });
-}
-
-function assignSlug (post) {
-  return _.assign(post, {
-    slug: _.snakeCase(post.frontmatter.title)
-  });
-}
-
-function assignUrl (post) {
-  return _.assign(post, {
-    url: path.join(config.rootUrl, post.slug)
-  }); 
-}
 
 function compileTemplate (context, template) {
   return ejs.compile(template)(context);
@@ -81,6 +41,22 @@ function compileTemplate (context, template) {
 function getUpdatedPosts (contDir, pubDir) {
   return Q.all([qReadDir(contDir), qReadDir(pubDir)])
     .spread(_.difference);
+}
+
+function writeUpdatedFrontmatter (posts) {
+  return Q.all(_.map(posts, function (post) {
+    var newFm = _.clone(post.frontmatter);
+    newFm.update = false;
+
+    return qFsWriteFile(path.join(post.dir, "frontmatter.json"), JSON.stringify(newFm, null, '\t'));     
+  }));
+}
+
+function switchUpdateProperty (posts) {
+  return Q(posts)
+    .then(_.partialRight(_.filter, (post) => post.frontmatter.update))
+    .then(writeUpdatedFrontmatter)
+    .done();
 }
 
 function getPosts (contDir) {
@@ -94,8 +70,8 @@ function getPosts (contDir) {
           bodyHtml = compileMarkdown(path.join(dir, "main.md"));
 
         return {
+          frontmatter: frontmatter,
           dir: dir,
-          frontmater: frontmatter,
           slug: slug,
           url: url,
           bodyHtml: bodyHtml
@@ -125,11 +101,7 @@ var updated = qReadDir(contentDir),
 //   .then(console.log)
 //   .fail(console.log);
 
-  // .then(_.partial(getUpdatedPosts, contentDir, publicDir))
-  // .then(console.log)
-  // .fail(console.log);
-
-
 getPosts(contentDir)
+  .then(switchUpdateProperty)
   .then(console.log)
   .fail(console.log);

@@ -1,6 +1,11 @@
 {
-  "title" : "Massive Fun Going On.",
-  "author": "Mike Fooks",
-  "date" : "05-19-2015",
-  "keywords": ["huge", "excellent", "writing"]
+	"title": "Massive Fun Going On.",
+	"author": "Mike Fooks",
+	"date": "05-19-2015",
+	"keywords": [
+		"huge",
+		"excellent",
+		"writing"
+	],
+	"update": false
 }
