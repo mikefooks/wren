@@ -13,9 +13,10 @@ var config = {
   rootUrl: "http://localhost"
 };
 
-var contentDir = path.join(process.cwd(), "content"),
-  publicDir = path.join(process.cwd(), "public"),
-  themeDir = path.join(process.cwd(), "theme");
+var cwd = process.cwd(), 
+  contentDir = path.join(cwd, "content"),
+  publicDir = path.join(cwd, "public"),
+  themeDir = path.join(cwd, "theme");
 
 var readFile = _.partialRight(fs.readFileSync, "utf8"),
   parseJSON = _.flow(readFile, JSON.parse),
@@ -33,30 +34,31 @@ marked.setOptions({
   smartypants: true
 });
 
+var argLog = function argLog (fn) {
+  return _.restParam(function (args) {
+    console.log(args);
+    fn.apply(this, args);
+  });
+};
+
 function compileTemplate (context, template) {
   return ejs.compile(template)(context);
 }
 
-// Create necessary post folders in the public directory.
-function getUpdatedPosts (contDir, pubDir) {
-  return Q.all([qReadDir(contDir), qReadDir(pubDir)])
-    .spread(_.difference);
-}
-
 function writeUpdatedFrontmatter (posts) {
-  return Q.all(_.map(posts, function (post) {
-    var newFm = _.clone(post.frontmatter);
-    newFm.update = false;
-
-    return qFsWriteFile(path.join(post.dir, "frontmatter.json"), JSON.stringify(newFm, null, '\t'));     
-  }));
-}
-
-function switchUpdateProperty (posts) {
   return Q(posts)
-    .then(_.partialRight(_.filter, (post) => post.frontmatter.update))
-    .then(writeUpdatedFrontmatter)
-    .done();
+    .then(_.partialRight(_.map, function (post) {
+      var newFm = _.clone(post.frontmatter),
+        pth, jsn;
+
+        newFm.update = false;
+
+      pth = path.join(post.dir, "frontmatter.json");
+      jsn = JSON.stringify(newFm, null, '\t');
+
+      return [ pth, jsn ];
+    }))
+    .then(_.partialRight(_.each, (data) => fs.writeFileSync.apply(this, data)));
 }
 
 function getPosts (contDir) {
@@ -80,28 +82,21 @@ function getPosts (contDir) {
     });
 }
 
-function updatePublicDirs (updated, pubDir) {
+function getUpdatedPosts (posts) {
+  return Q(posts)
+    .then(_.partialRight(_.filter, (post) => post.frontmatter.update));
+}
+
+function updatePublicDirs (updated) {
   return Q(updated)
-    .then(_.partialRight(_.map, _.ary(_.partial(path.join, pubDir), 1)))
+    .then(_.partialRight(_.pluck, "slug"))
+    .then(_.partialRight(_.map, _.ary(_.partial(path.join, publicDir), 1)))
     .then(_.partialRight(_.each, mkdirp.sync));
 }
 
-// Get the names of all post directories in the content folder
-var updated = qReadDir(contentDir),
-  old = qReadDir(publicDir);
+var posts = getPosts(contentDir);
 
-// Build a collection of post data, frontmatter, etc.
-// var postAttrs = posts
-//   .then(_.partialRight(_.map, retrieveContentInfo))
-//   .then(_.partialRight(_.map, assignSlug))
-
-// qMkDirP(publicDir)
-//   .then(_.partial(getUpdatedPosts, contentDir, publicDir))
-//   .then(_.partialRight(updatePublicDirs, publicDir))
-//   .then(console.log)
-//   .fail(console.log);
-
-getPosts(contentDir)
-  .then(switchUpdateProperty)
-  .then(console.log)
+posts.tap(_.partial(qMkDirP, publicDir))
+  .tap(_.flow(getUpdatedPosts, updatePublicDirs))
+  .tap(_.flow(getUpdatedPosts, writeUpdatedFrontmatter))
   .fail(console.log);
