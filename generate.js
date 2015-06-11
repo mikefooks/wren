@@ -2,6 +2,7 @@
 
 var fs = require("fs"),
   path = require("path"),
+  url = require("url"),
   _ = require("lodash"),
   Q = require("q"),
   marked = require("marked"),
@@ -34,31 +35,27 @@ marked.setOptions({
   smartypants: true
 });
 
-var argLog = function argLog (fn) {
-  return _.restParam(function (args) {
-    console.log(args);
-    fn.apply(this, args);
-  });
-};
+function slugify (str) {
+  return _.snakeCase(str.replace(/[^\w\s]/g, ""));
+}
 
 function compileTemplate (context, template) {
   return ejs.compile(template)(context);
 }
 
-function writeUpdatedFrontmatter (posts) {
-  return Q(posts)
-    .then(_.partialRight(_.map, function (post) {
-      var newFm = _.clone(post.frontmatter),
-        pth, jsn;
+function writeUpdatedFrontmatter (updated) {
+  return Q(updated)
+    .then(_.partialRight(_.each, (post) => {
+      var data = [], 
+        frontmatter = _.clone(post.frontmatter);
 
-        newFm.update = false;
+      frontmatter.update = false;
 
-      pth = path.join(post.dir, "frontmatter.json");
-      jsn = JSON.stringify(newFm, null, '\t');
+      data.push(path.join(post.dir, "frontmatter.json"));
+      data.push(JSON.stringify(frontmatter, null, '\t'));
 
-      return [ pth, jsn ];
-    }))
-    .then(_.partialRight(_.each, (data) => fs.writeFileSync.apply(this, data)));
+      fs.writeFileSync.apply(this, data);
+    }));
 }
 
 function getPosts (contDir) {
@@ -67,7 +64,8 @@ function getPosts (contDir) {
       return _.map(posts, function (post) {
         var dir = path.join(contentDir, post),
           frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
-          slug = _.snakeCase(frontmatter.title),
+          slug = slugify(frontmatter.title),
+          target = path.join(publicDir, slug),
           url = path.join(config.rootUrl, slug),
           bodyHtml = compileMarkdown(path.join(dir, "main.md"));
 
@@ -75,6 +73,7 @@ function getPosts (contDir) {
           frontmatter: frontmatter,
           dir: dir,
           slug: slug,
+          target: target,
           url: url,
           bodyHtml: bodyHtml
         };
@@ -89,9 +88,9 @@ function getUpdatedPosts (posts) {
 
 function updatePublicDirs (updated) {
   return Q(updated)
-    .then(_.partialRight(_.pluck, "slug"))
-    .then(_.partialRight(_.map, _.ary(_.partial(path.join, publicDir), 1)))
-    .then(_.partialRight(_.each, mkdirp.sync));
+    .then(_.partialRight(_.each, post => {
+      mkdirp.sync(path.join(publicDir, post.slug));
+    }));
 }
 
 var posts = getPosts(contentDir);
