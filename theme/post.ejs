@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mikefooks.com</title>
+  <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css' />
+  <link rel="stylesheet" href="main.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>mikefooks.com</h1>
+    </header>
+    <main>
+      <section class="stuff">
+        <h2><%= post.title %></h2>
+        <small><%= post.date %></small>
+        <div class="body">
+          <%- post.bodyHtml %>
+        </div>
+      </article>
+      <nav>
+        <ul>
+          <li>Look</li>
+          <li>At</li>
+          <li>This</li>
+        </ul>
+      </nav>
+    </main>
+    <footer><small>&copy; 2015 Mike Fooks</small></footer>
+  </div>
+</body>
+</html>
