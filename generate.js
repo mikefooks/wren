@@ -39,63 +39,54 @@ function slugify (str) {
   return _.snakeCase(str.replace(/[^\w\s]/g, ""));
 }
 
-function compileTemplate (context, template) {
+function compileTemplate (template, context) {
   return ejs.compile(template)(context);
 }
 
-function writeUpdatedFrontmatter (updated) {
-  return Q(updated)
-    .then(_.partialRight(_.each, (post) => {
-      var data = [], 
-        frontmatter = _.clone(post.frontmatter);
+function buildPostCollection (posts) {
+  return Q(_.map(posts, function (post) {
+    var dir = path.join(contentDir, post),
+      frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
+      slug = slugify(frontmatter.title);
 
-      frontmatter.update = false;
-
-      data.push(path.join(post.dir, "frontmatter.json"));
-      data.push(JSON.stringify(frontmatter, null, '\t'));
-
-      fs.writeFileSync.apply(this, data);
-    }));
-}
-
-function getPosts (contDir) {
-  return qReadDir(contDir)
-    .then(function (posts) {
-      return _.map(posts, function (post) {
-        var dir = path.join(contentDir, post),
-          frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
-          slug = slugify(frontmatter.title),
-          target = path.join(publicDir, slug),
-          url = path.join(config.rootUrl, slug),
-          bodyHtml = compileMarkdown(path.join(dir, "main.md"));
-
-        return {
-          frontmatter: frontmatter,
-          dir: dir,
-          slug: slug,
-          target: target,
-          url: url,
-          bodyHtml: bodyHtml
-        };
-      });
-    });
+    return {
+      frontmatter: frontmatter,
+      dir: dir,
+      slug: slug,
+      target: path.join(publicDir, slug),
+      url: path.join(config.rootUrl, slug),
+      bodyHtml: compileMarkdown(path.join(dir, "main.md"))
+    };
+  }));
 }
 
 function getUpdatedPosts (posts) {
-  return Q(posts)
-    .then(_.partialRight(_.filter, (post) => post.frontmatter.update));
+  return Q(_.filter(posts, post => post.frontmatter.update));
 }
 
 function updatePublicDirs (updated) {
-  return Q(updated)
-    .then(_.partialRight(_.each, post => {
-      mkdirp.sync(path.join(publicDir, post.slug));
-    }));
+  return Q.all(_.map(updated, post => qMkDirP(post.target)));
 }
 
-var posts = getPosts(contentDir);
+function writeUpdatedFrontmatter (updated) {
+  return Q.all(_.map(updated, post => {
+    var frontmatter = _.clone(post.frontmatter);
+
+    frontmatter.update = false;
+
+    return qFsWriteFile(
+      path.join(post.dir, "frontmatter.json"),
+      JSON.stringify(frontmatter, null, '\t')
+    );
+  }));
+}
+
+var posts = qReadDir(contentDir)
+  .then(buildPostCollection);
 
 posts.tap(_.partial(qMkDirP, publicDir))
-  .tap(_.flow(getUpdatedPosts, updatePublicDirs))
-  .tap(_.flow(getUpdatedPosts, writeUpdatedFrontmatter))
+  .then(getUpdatedPosts)
+  .tap(updatePublicDirs)
+  .tap(writeUpdatedFrontmatter)
+  .then(console.log)
   .fail(console.log);
