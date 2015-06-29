@@ -6,9 +6,11 @@
   "devDependencies": {},
   "dependencies": {
     "async": "^1.0.0",
+    "commander": "^2.8.1",
     "ejs": "^2.3.1",
     "lodash": "^3.9.1",
     "mkdirp": "^0.5.1",
+    "node-uuid": "^1.4.3",
     "q": "^1.4.1",
     "rimraf": "^2.3.4"
   }

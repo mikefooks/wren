@@ -4,6 +4,7 @@ var fs = require("fs"),
   path = require("path"),
   url = require("url"),
   _ = require("lodash"),
+  H = require("./helpers.js"),
   Q = require("q"),
   marked = require("marked"),
   ejs = require("ejs"),
@@ -35,26 +36,24 @@ marked.setOptions({
   smartypants: true
 });
 
-function slugify (str) {
-  return _.snakeCase(str.replace(/[^\w\s]/g, ""));
-}
-
 function compileTemplate (template, context) {
   return ejs.compile(template)(context);
 }
 
 function buildPostCollection (posts) {
-  return Q(_.map(posts, function (post) {
+  return Q(_.map(posts, post => {
     var dir = path.join(contentDir, post),
       frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
-      slug = slugify(frontmatter.title);
+      slug = H.slugify(frontmatter.title);
+
+    frontmatter.date = new Date(frontmatter.date);
 
     return {
       frontmatter: frontmatter,
       dir: dir,
       slug: slug,
       target: path.join(publicDir, slug),
-      url: path.join(config.rootUrl, slug),
+      url: url.resolve(config.rootUrl, slug),
       bodyHtml: compileMarkdown(path.join(dir, "main.md"))
     };
   }));
