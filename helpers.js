@@ -23,6 +23,15 @@ function slugify (str) {
   return _.snakeCase(str.replace(/[^\w\s]/g, ""));
 }
 
+function nameContentFolder(frontmatter) {
+  var dateString = frontmatter.created
+    .toISOString()
+    .substring(0, 10)
+    .replace(/\-/g, "_");
+
+  return [dateString, frontmatter.slug].join("_");
+}
+
 function createDefaultFrontMatter (title) {
   return Q.resolve({
     title: title,
@@ -36,11 +45,11 @@ function createDefaultFrontMatter (title) {
 
 function createContentFolder (title) {
   return createDefaultFrontMatter(title)
-    .tap(frontmatter => qMkDirP(contentDir(frontmatter.slug)))
+    .tap(frontmatter => qMkDirP(contentDir(nameContentFolder(frontmatter))))
     .then(frontmatter => {
       return qFsWriteFile(
-        contentDir(frontmatter.slug, "frontmatter.json"), 
-        JSON.stringify(frontmatter));
+        contentDir(nameContentFolder(frontmatter), "frontmatter.json"), 
+        JSON.stringify(frontmatter, null, '\t'));
     });
 }
 
