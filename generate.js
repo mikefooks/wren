@@ -12,13 +12,13 @@ var fs = require("fs"),
   mkdirp = require("mkdirp");
 
 var config = {
-  rootUrl: "http://localhost"
+  rootUrl: "http://localhost/"
 };
 
-var cwd = process.cwd(), 
-  contentDir = path.join(cwd, "content"),
-  publicDir = path.join(cwd, "public"),
-  themeDir = path.join(cwd, "theme");
+var CWD = process.cwd(), 
+  contentDir = path.join(CWD, "content"),
+  publicDir = path.join(CWD, "public"),
+  themeDir = path.join(CWD, "theme");
 
 var readFile = _.partialRight(fs.readFileSync, "utf8"),
   parseJSON = _.flow(readFile, JSON.parse),
@@ -41,7 +41,7 @@ function compileTemplate (template, context) {
 }
 
 function buildPostCollection (posts) {
-  return Q(_.map(posts, post => {
+  return Q.resolve(_.map(posts, post => {
     var dir = path.join(contentDir, post),
       frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
       slug = H.slugify(frontmatter.title);
@@ -60,7 +60,7 @@ function buildPostCollection (posts) {
 }
 
 function getUpdatedPosts (posts) {
-  return Q(_.filter(posts, post => post.frontmatter.update));
+  return Q.resolve(_.filter(posts, post => post.frontmatter.update));
 }
 
 function updatePublicDirs (updated) {
