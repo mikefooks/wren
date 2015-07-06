@@ -12,8 +12,8 @@ var qMkDirP = Q.nfbind(mkdirp),
   qFsWriteFile = Q.nfbind(fs.writeFile);
 
 var config = {
-  publicFolder: "./public",
-  contentFolder: "./content",
+  publicFolder: path.join(CWD, "public"),
+  contentFolder: path.join(CWD, "content"),
   author: "Mike Fooks"
 };
 
@@ -45,11 +45,17 @@ function createDefaultFrontMatter (title) {
 
 function createContentFolder (title) {
   return createDefaultFrontMatter(title)
-    .tap(frontmatter => qMkDirP(contentDir(nameContentFolder(frontmatter))))
+    // Create the directory
+    .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
+    // Write the frontmatter.json file to the directory
     .then(frontmatter => {
-      return qFsWriteFile(
-        contentDir(nameContentFolder(frontmatter), "frontmatter.json"), 
-        JSON.stringify(frontmatter, null, '\t'));
+      return Q.all([
+        qFsWriteFile(
+          contentDir(nameContentFolder(frontmatter), "frontmatter.json"), 
+          JSON.stringify(frontmatter, null, '\t')),
+        qFsWriteFile(
+          contentDir(nameContentFolder(frontmatter), "main.md"),
+          "<!-- Write your post here! -->")]);
     });
 }
 

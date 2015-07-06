@@ -40,6 +40,15 @@ function compileTemplate (template, context) {
   return ejs.compile(template)(context);
 }
 
+/**
+ * Builds a collection of objects representing all the posts to be updated,
+ * and all the necessary properties required to generate the html files 
+ * and directories for said posts.
+ * @param  {Array} posts  An array of directory names (strings) from the 
+ *                        content folder
+ * @return {Q Promise}    A fulfilled promise whose value is a collection of 
+ *                        post objects.
+ */
 function buildPostCollection (posts) {
   return Q.resolve(_.map(posts, post => {
     var dir = path.join(contentDir, post),
@@ -59,10 +68,23 @@ function buildPostCollection (posts) {
   }));
 }
 
+/**
+ * Simply filters a collection of post objects based on whether their
+ * "update" property is set to true.
+ * @param  {Array}  posts   A collection of unfiltered post objects.
+ * @return {Q Promise}      A fulfilled promise whose value is the filtered
+ *                          collection of post objects whose "updated" value 
+ *                          is true.
+ */
 function getUpdatedPosts (posts) {
   return Q.resolve(_.filter(posts, post => post.frontmatter.update));
 }
 
+/**
+ * [updatePublicDirs description]
+ * @param  {[type]} updated [description]
+ * @return {[type]}         [description]
+ */
 function updatePublicDirs (updated) {
   return Q.all(_.map(updated, post => qMkDirP(post.target)));
 }
@@ -83,9 +105,16 @@ function writeUpdatedFrontmatter (updated) {
 var posts = qReadDir(contentDir)
   .then(buildPostCollection);
 
-posts.tap(_.partial(qMkDirP, publicDir))
-  .then(getUpdatedPosts)
-  .tap(updatePublicDirs)
-  .tap(writeUpdatedFrontmatter)
-  .then(console.log)
-  .fail(console.log);
+function generateUpdated (posts) {
+  return posts.tap(_.partial(qMkDirP, publicDir))
+    .then(getUpdatedPosts)
+    .tap(updatePublicDirs)
+    .tap(writeUpdatedFrontmatter)
+    .then(console.log)
+    .fail(console.log)
+    .done();
+}
+
+module.exports = {
+  generateUpdated: generateUpdated
+};
