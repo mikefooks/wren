@@ -20,6 +20,8 @@ var CWD = process.cwd(),
   publicDir = path.join(CWD, "public"),
   themeDir = path.join(CWD, "theme");
 
+console.log(publicDir);
+
 var readFile = _.partialRight(fs.readFileSync, "utf8"),
   parseJSON = _.flow(readFile, JSON.parse),
   compileMarkdown = _.flow(readFile, marked);
@@ -52,17 +54,16 @@ function compileTemplate (template, context) {
 function buildPostCollection (posts) {
   return Q.resolve(_.map(posts, post => {
     var dir = path.join(contentDir, post),
-      frontmatter = parseJSON(path.join(dir, "frontmatter.json")),
-      slug = H.slugify(frontmatter.title);
+      frontmatter = parseJSON(path.join(dir, "frontmatter.json"));
 
-    frontmatter.date = new Date(frontmatter.date);
+    frontmatter.created = new Date(frontmatter.created);
+    frontmatter.modified = new Date();
 
     return {
       frontmatter: frontmatter,
       dir: dir,
-      slug: slug,
-      target: path.join(publicDir, slug),
-      url: url.resolve(config.rootUrl, slug),
+      slug: frontmatter.slug,
+      target: path.join(publicDir, frontmatter.slug),
       bodyHtml: compileMarkdown(path.join(dir, "main.md"))
     };
   }));
@@ -81,9 +82,10 @@ function getUpdatedPosts (posts) {
 }
 
 /**
- * [updatePublicDirs description]
- * @param  {[type]} updated [description]
- * @return {[type]}         [description]
+ * Creates directories corresponding to a collection of updated post objects.
+ * @param  {Array}  updated   A collection of updated post objects
+ * @return {Q Promise}        A Q Promise which is fulfilled asynchronously
+ *                            once all the new directories have been created.
  */
 function updatePublicDirs (updated) {
   return Q.all(_.map(updated, post => qMkDirP(post.target)));
@@ -102,17 +104,15 @@ function writeUpdatedFrontmatter (updated) {
   }));
 }
 
-var posts = qReadDir(contentDir)
-  .then(buildPostCollection);
-
-function generateUpdated (posts) {
-  return posts.tap(_.partial(qMkDirP, publicDir))
+function generateUpdated () {
+  return qReadDir(contentDir)
+    .then(buildPostCollection)
+    .tap(_.partial(qMkDirP, publicDir))
     .then(getUpdatedPosts)
     .tap(updatePublicDirs)
     .tap(writeUpdatedFrontmatter)
     .then(console.log)
-    .fail(console.log)
-    .done();
+    .fail(console.log);
 }
 
 module.exports = {

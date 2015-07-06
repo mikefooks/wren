@@ -4,7 +4,8 @@ var path = require("path"),
   fs = require("fs"),
   _ = require("lodash"),
   Q = require("q"),
-  mkdirp = require("mkdirp");
+  mkdirp = require("mkdirp"),
+  uuid = require("node-uuid");
 
 var CWD = process.cwd();
 
@@ -25,7 +26,6 @@ function slugify (str) {
 
 function nameContentFolder(frontmatter) {
   var dateString = frontmatter.created
-    .toISOString()
     .substring(0, 10)
     .replace(/\-/g, "_");
 
@@ -33,17 +33,22 @@ function nameContentFolder(frontmatter) {
 }
 
 function createDefaultFrontMatter (title) {
-  return Q.resolve({
-    title: title,
-    author: config.author,
-    slug: slugify(title),
-    created: new Date(),
-    keywords: [],
-    update: true
-  });
+  var created = new Date().toISOString(),
+    frontmatter = {
+      id: uuid.v4(),
+      title: title,
+      author: config.author,
+      slug: slugify(title),
+      created: created,
+      modified: created,
+      keywords: [],
+      update: true
+    };
+
+  return Q.resolve(frontmatter);
 }
 
-function createContentFolder (title) {
+function createNewPost (title) {
   return createDefaultFrontMatter(title)
     // Create the directory
     .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
@@ -60,5 +65,5 @@ function createContentFolder (title) {
 }
 
 module.exports = {
-  createContentFolder: createContentFolder
+  createNewPost: createNewPost
 };
