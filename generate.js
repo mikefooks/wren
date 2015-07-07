@@ -20,8 +20,6 @@ var CWD = process.cwd(),
   publicDir = path.join(CWD, "public"),
   themeDir = path.join(CWD, "theme");
 
-console.log(publicDir);
-
 var readFile = _.partialRight(fs.readFileSync, "utf8"),
   parseJSON = _.flow(readFile, JSON.parse),
   compileMarkdown = _.flow(readFile, marked);
@@ -31,6 +29,10 @@ var qReadDir = Q.nfbind(fs.readdir),
   qFsExists = Q.nfbind(fs.exists),
   qMkDirP = Q.nfbind(mkdirp),
   qFsWriteFile = Q.nfbind(fs.writeFile);
+
+var filters = {
+  updated: posts => _.filter(posts, post => post.frontmatter.update)
+};
 
 marked.setOptions({
   breaks: false,
@@ -80,18 +82,6 @@ function buildPostCollection (posts) {
 }
 
 /**
- * Simply filters a collection of post objects based on whether their
- * "update" property is set to true.
- * @param  { Array }  posts   A collection of unfiltered post objects.
- * @return { Q Promise }      A fulfilled promise whose value is the filtered
- *                            collection of post objects whose "updated" value 
- *                            is true. 
- */
-function getUpdatedPosts (posts) {
-  return Q.resolve(_.filter(posts, post => post.frontmatter.update));
-}
-
-/**
  * Creates directories corresponding to a collection of updated post objects.
  * @param  { Array }  updated   A collection of updated post objects
  * @return { Q Promise }        A Q Promise which is fulfilled asynchronously
@@ -123,22 +113,19 @@ function writeUpdatedFrontmatter (updated) {
 }
 
 /**
- * Takes a collection of (updated) post objects and generates the main index page
- * to the root of the public folder, based upon the index.ejs template
+ * Takes a collection of (updated) post objects and generates the main index 
+ * page to the root of the public folder, based upon the index.ejs template
  * in the theme directory.
  * @param  { Array } updated  A collection of updated post objects.
- * @return { Q Promise }      A Q promise fulfilled when the HTML index has been
- *                            written to the public directory.
+ * @return { Q Promise }      A Q promise fulfilled when the HTML index has 
+ *                            been written to the public directory.
  */
 function generateIndex (updated) {
-  var template = readFile(path.join(themeDir, "index.ejs")),
-    html = ejs.compile(template)({ posts: updated });
-
-  console.log(updated);
+  var template = readFile(path.join(themeDir, "index.ejs"));
 
   return qFsWriteFile(
     path.join(publicDir, "index.html"),
-    html
+    ejs.compile(template)({ posts: updated })
   );
 }
 
@@ -146,10 +133,9 @@ function generateUpdated () {
   return qReadDir(contentDir)
     .then(buildPostCollection)
     .tap(_.partial(qMkDirP, publicDir))
-    .then(getUpdatedPosts)
-    .tap(updatePublicDirs)
-    .tap(generateIndex)
-    .tap(writeUpdatedFrontmatter)
+    .tap(_.flow(filters.updated, updatePublicDirs))
+    .tap(_.flow(filters.updated, generateIndex))
+    .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
     .fail(console.log);
 }
 
