@@ -38,8 +38,18 @@ marked.setOptions({
   smartypants: true
 });
 
-function compileTemplate (template, context) {
-  return ejs.compile(template)(context);
+/*
+ * A decorator that returns, rather than just the return value, an array
+ * containing the return value and an array containing the original
+ * arguments to the function. 
+ */
+function passThrough (fn, ctx) {
+  return function () {
+    var args = Array.prototype.slice.call(arguments, 0),
+      ctx = ctx || this;
+
+    return [fn.apply(ctx, args), args];
+  };
 }
 
 /**
@@ -72,10 +82,10 @@ function buildPostCollection (posts) {
 /**
  * Simply filters a collection of post objects based on whether their
  * "update" property is set to true.
- * @param  {Array}  posts   A collection of unfiltered post objects.
- * @return {Q Promise}      A fulfilled promise whose value is the filtered
- *                          collection of post objects whose "updated" value 
- *                          is true.
+ * @param  { Array }  posts   A collection of unfiltered post objects.
+ * @return { Q Promise }      A fulfilled promise whose value is the filtered
+ *                            collection of post objects whose "updated" value 
+ *                            is true. 
  */
 function getUpdatedPosts (posts) {
   return Q.resolve(_.filter(posts, post => post.frontmatter.update));
@@ -83,14 +93,22 @@ function getUpdatedPosts (posts) {
 
 /**
  * Creates directories corresponding to a collection of updated post objects.
- * @param  {Array}  updated   A collection of updated post objects
- * @return {Q Promise}        A Q Promise which is fulfilled asynchronously
+ * @param  { Array }  updated   A collection of updated post objects
+ * @return { Q Promise }        A Q Promise which is fulfilled asynchronously
  *                            once all the new directories have been created.
  */
 function updatePublicDirs (updated) {
   return Q.all(_.map(updated, post => qMkDirP(post.target)));
 }
 
+/**
+ * Takes a collection of updated post objects and rewrites their
+ * frontmatter.json files to reflect an updated property of false.
+ * @param  { Array }  updated   A collection of post objects whose updated
+ *                              properties are (presumably), set to true.
+ * @return { Q Promise }        A Q.all promise that resolves once all the new
+ *                             frontmatter.json files have been written.
+ */
 function writeUpdatedFrontmatter (updated) {
   return Q.all(_.map(updated, post => {
     var frontmatter = _.clone(post.frontmatter);
@@ -104,14 +122,34 @@ function writeUpdatedFrontmatter (updated) {
   }));
 }
 
+/**
+ * Takes a collection of (updated) post objects and generates the main index page
+ * to the root of the public folder, based upon the index.ejs template
+ * in the theme directory.
+ * @param  { Array } updated  A collection of updated post objects.
+ * @return { Q Promise }      A Q promise fulfilled when the HTML index has been
+ *                            written to the public directory.
+ */
+function generateIndex (updated) {
+  var template = readFile(path.join(themeDir, "index.ejs")),
+    html = ejs.compile(template)({ posts: updated });
+
+  console.log(updated);
+
+  return qFsWriteFile(
+    path.join(publicDir, "index.html"),
+    html
+  );
+}
+
 function generateUpdated () {
   return qReadDir(contentDir)
     .then(buildPostCollection)
     .tap(_.partial(qMkDirP, publicDir))
     .then(getUpdatedPosts)
     .tap(updatePublicDirs)
+    .tap(generateIndex)
     .tap(writeUpdatedFrontmatter)
-    .then(console.log)
     .fail(console.log);
 }
 
