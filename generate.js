@@ -6,6 +6,7 @@ var fs = require("fs"),
   _ = require("lodash"),
   H = require("./helpers.js"),
   Q = require("q"),
+  gm = require("gm"),
   marked = require("marked"),
   ejs = require("ejs"),
   rimraf = require("rimraf"),
@@ -13,6 +14,14 @@ var fs = require("fs"),
 
 var config = {
   rootUrl: "http://localhost/"
+};
+
+var renderer = new marked.Renderer();
+
+renderer.image = function (href, title, text) {
+  return [
+    ""
+  ].join();
 };
 
 var CWD = process.cwd(), 
@@ -41,6 +50,10 @@ marked.setOptions({
 });
 
 /*
+  UTILITIES
+ */
+
+/*
  * A decorator that returns, rather than just the return value, an array
  * containing the return value and an array containing the original
  * arguments to the function. 
@@ -53,6 +66,27 @@ function passThrough (fn, ctx) {
     return [fn.apply(ctx, args), args];
   };
 }
+
+/**
+ * Makes a string HTML tag.
+ * @param  {[type]} type  [description]
+ * @param  {[type]} attrs [description]
+ * @return {[type]}       [description]
+ */
+function htmlTag (type, attrs) {
+  var tag = "<" + type;
+
+  _.forIn(attrs, (val, key) => {
+    tag += " " + key + "=" + val;
+  });
+
+  return tag += "/>";
+}
+
+
+/*
+  PROMISE-RETURNING FUNCTIONS
+ */
 
 /**
  * Builds a collection of objects representing all the posts to be updated,
@@ -129,16 +163,66 @@ function generateIndex (updated) {
   );
 }
 
+/**
+ * Resizes and possibly extracts a colour channel from an image in order to
+ * bounce it to black and white.
+ * @param  { String } size      The width in pixel of the output image---the image
+ *                              will retain its original aspect ratio.
+ * @param  { String } path      The path of the original image to be resized etc.
+ * @param  { String } target    The destination path of the converted image.
+ * @return { Q Promise }        Returns a Q promised that's resolved when the
+ *                              image has been written successfully. 
+ */
+function convertImage (size, path, target) {
+  return Q.promise(function (resolve, reject) {
+    gm(path)
+      .autoOrient()
+      .resize(size)
+      .write(target, function (err) {
+        if (err) { 
+          return reject(err);
+        } else {
+          return resolve();
+        }
+      });
+  });
+}
+
+/**
+ * Takes a collection of post objects and returns a two-dimensional array
+ * containing the names of all the images found in each post's image 
+ * directory.
+ * @param  { Array } updated   A collection of post objects whose images we 
+ *                             would like to know.   
+ * @return { Q Promise }       returns a Q Promise that's resolved when the
+ *                             contents of the image directories have been 
+ *                             successfully read.           
+ */
+function getImageFileNames (updated) {
+  return Q.all(_.map(updated, function (post) { 
+    return qReadDir(path.join(post.dir, "images"))
+      .then(images => _.assign(post, { images: images }));
+  }));
+}
+
+
+/*
+  GENERATE FUNCTIONS
+ */
+
 function generateUpdated () {
   return qReadDir(contentDir)
     .then(buildPostCollection)
     .tap(_.partial(qMkDirP, publicDir))
-    .tap(_.flow(filters.updated, updatePublicDirs))
-    .tap(_.flow(filters.updated, generateIndex))
-    .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
+    // .tap(_.flow(filters.updated, updatePublicDirs))
+    // .tap(_.flow(filters.updated, generateIndex))
+    // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
+    .then(_.flow(filters.updated, getImageFileNames))
+    .then(console.log)
     .fail(console.log);
 }
 
 module.exports = {
+  htmlTag: htmlTag,
   generateUpdated: generateUpdated
 };
