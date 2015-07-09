@@ -95,8 +95,6 @@ function buildPostCollection (posts) {
 
     return {
       dir: dir,
-      slug: frontmatter.slug,
-      target: path.join(publicDir, frontmatter.slug),
       bodyHtml: compileMarkdown(path.join(dir, "main.md"))
     };
   }));
@@ -223,6 +221,7 @@ function generateUpdated () {
   return qReadDir(contentDir)
     .then(function (posts) {
       return buildPostCollection(posts)
+        .then(assignFrontmatter)
         .then(getImageFileNames);
     })
     // .tap(_.partial(qMkDirP, publicDir))
