@@ -16,15 +16,7 @@ var config = {
   rootUrl: "http://localhost/"
 };
 
-var renderer = new marked.Renderer();
-
-renderer.image = function (href, title, text) {
-  return [
-    ""
-  ].join();
-};
-
-var CWD = process.cwd(), 
+var CWD = process.cwd(),
   contentDir = path.join(CWD, "content"),
   publicDir = path.join(CWD, "public"),
   themeDir = path.join(CWD, "theme");
@@ -34,6 +26,7 @@ var readFile = _.partialRight(fs.readFileSync, "utf8"),
   compileMarkdown = _.flow(readFile, marked);
 
 var qReadDir = Q.nfbind(fs.readdir),
+  qReadFile = Q.nfbind(fs.readFile),
   qMkDir = Q.nfbind(fs.mkdir),
   qFsExists = Q.nfbind(fs.exists),
   qMkDirP = Q.nfbind(mkdirp),
@@ -54,16 +47,15 @@ marked.setOptions({
  */
 
 /*
- * A decorator that returns, rather than just the return value, an array
- * containing the return value and an array containing the original
- * arguments to the function. 
+ * Not unlike a tap method, this executes a promise-returning function
+ * but then returns a promise that resolves the arguments
+ * passed to the original function.
  */
-function passThrough (fn, ctx) {
+function sideEffect (fn) {
   return function () {
-    var args = Array.prototype.slice.call(arguments, 0),
-      ctx = ctx || this;
+    var args = Array.prototype.slice.call(arguments, 0);
 
-    return [fn.apply(ctx, args), args];
+    return fn.apply(this, args).then(() => args);
   };
 }
 
@@ -77,7 +69,7 @@ function htmlTag (type, attrs) {
   var tag = "<" + type;
 
   _.forIn(attrs, (val, key) => {
-    tag += " " + key + "=" + val;
+    return tag += " " + key + "='" + val + "'";
   });
 
   return tag += "/>";
@@ -99,19 +91,45 @@ function htmlTag (type, attrs) {
  */
 function buildPostCollection (posts) {
   return Q.resolve(_.map(posts, post => {
-    var dir = path.join(contentDir, post),
-      frontmatter = parseJSON(path.join(dir, "frontmatter.json"));
-
-    frontmatter.created = new Date(frontmatter.created);
-    frontmatter.modified = new Date();
+    var dir = path.join(contentDir, post);
 
     return {
-      frontmatter: frontmatter,
       dir: dir,
       slug: frontmatter.slug,
       target: path.join(publicDir, frontmatter.slug),
       bodyHtml: compileMarkdown(path.join(dir, "main.md"))
     };
+  }));
+}
+
+function assignFrontmatter (posts) {
+  return Q.all(_.map(posts, post => { 
+    return qReadFile(path.join(post.dir, "frontmatter.json"))
+      .then(fm => {
+        var frontmatter = JSON.parse(fm);
+        
+        frontmatter.created = new Date(frontmatter.created);
+        frontmatter.modified = new Date();
+
+        return _.assign(post, frontmatter);
+      });
+  }));
+}
+
+/**
+ * Takes a collection of post objects and returns a two-dimensional array
+ * containing the names of all the images found in each post's image 
+ * directory.
+ * @param  { Array } updated   A collection of post objects whose images we 
+ *                             would like to know.   
+ * @return { Q Promise }       returns a Q Promise that's resolved when the
+ *                             contents of the image directories have been 
+ *                             successfully read.           
+ */
+function getImageFileNames (updated) {
+  return Q.all(_.map(updated, post => { 
+    return qReadDir(path.join(post.dir, "images"))
+      .then(images => _.assign(post, { images: images }));
   }));
 }
 
@@ -150,7 +168,9 @@ function writeUpdatedFrontmatter (updated) {
  * Takes a collection of (updated) post objects and generates the main index 
  * page to the root of the public folder, based upon the index.ejs template
  * in the theme directory.
- * @param  { Array } updated  A collection of updated post objects.
+ * @param  { Array } updated  A collection of post objects, (presumably, though
+ *                            not necessarily) with their update attribute set 
+ *                            to true.
  * @return { Q Promise }      A Q promise fulfilled when the HTML index has 
  *                            been written to the public directory.
  */
@@ -188,20 +208,9 @@ function convertImage (size, path, target) {
   });
 }
 
-/**
- * Takes a collection of post objects and returns a two-dimensional array
- * containing the names of all the images found in each post's image 
- * directory.
- * @param  { Array } updated   A collection of post objects whose images we 
- *                             would like to know.   
- * @return { Q Promise }       returns a Q Promise that's resolved when the
- *                             contents of the image directories have been 
- *                             successfully read.           
- */
-function getImageFileNames (updated) {
-  return Q.all(_.map(updated, function (post) { 
-    return qReadDir(path.join(post.dir, "images"))
-      .then(images => _.assign(post, { images: images }));
+function writeResponsiveImages (images) {
+  return Q.all(_.map(images, image => {
+
   }));
 }
 
@@ -212,17 +221,19 @@ function getImageFileNames (updated) {
 
 function generateUpdated () {
   return qReadDir(contentDir)
-    .then(buildPostCollection)
-    .tap(_.partial(qMkDirP, publicDir))
+    .then(function (posts) {
+      return buildPostCollection(posts)
+        .then(getImageFileNames);
+    })
+    // .tap(_.partial(qMkDirP, publicDir))
     // .tap(_.flow(filters.updated, updatePublicDirs))
     // .tap(_.flow(filters.updated, generateIndex))
     // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
-    .then(_.flow(filters.updated, getImageFileNames))
+    // .then(_.flow(filters.updated, getImageFileNames))
     .then(console.log)
     .fail(console.log);
 }
 
 module.exports = {
-  htmlTag: htmlTag,
   generateUpdated: generateUpdated
 };
