@@ -89,20 +89,18 @@ function htmlTag (type, attrs) {
  * @return {Q Promise}    A fulfilled promise whose value is a collection of 
  *                        post objects.
  */
-function buildPostCollection (posts) {
-  return Q.resolve(_.map(posts, post => {
-    var dir = path.join(contentDir, post);
-
-    return {
-      dir: dir,
-      bodyHtml: compileMarkdown(path.join(dir, "main.md"))
-    };
-  }));
+function buildPostCollection (dirs) {
+  return Q.resolve(_.map(dirs, dir => { 
+    return { dir: path.join(contentDir, dir) };
+  }))
+    .then(assignFrontmatter)
+    .then(assignBodyHtml)
+    .then(assignImages);
 }
 
 function assignFrontmatter (posts) {
   return Q.all(_.map(posts, post => { 
-    return qReadFile(path.join(post.dir, "frontmatter.json"))
+    return qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
       .then(fm => {
         var frontmatter = JSON.parse(fm);
         
@@ -112,6 +110,14 @@ function assignFrontmatter (posts) {
         return _.assign(post, frontmatter);
       });
   }));
+}
+
+function assignBodyHtml (posts) {
+  return Q.all(_.map(posts, post =>
+    qReadFile(path.join(post.dir, "main.md"), "utf8")
+      .then(md => marked(md))
+      .then(html => _.assign(post, { bodyHtml: html }))
+  ));
 }
 
 /**
@@ -124,11 +130,11 @@ function assignFrontmatter (posts) {
  *                             contents of the image directories have been 
  *                             successfully read.           
  */
-function getImageFileNames (updated) {
-  return Q.all(_.map(updated, post => { 
-    return qReadDir(path.join(post.dir, "images"))
-      .then(images => _.assign(post, { images: images }));
-  }));
+function assignImages (updated) {
+  return Q.all(_.map(updated, post =>
+    qReadDir(path.join(post.dir, "images"))
+      .then(images => _.assign(post, { images: images }))
+  ));
 }
 
 /**
@@ -219,11 +225,7 @@ function writeResponsiveImages (images) {
 
 function generateUpdated () {
   return qReadDir(contentDir)
-    .then(function (posts) {
-      return buildPostCollection(posts)
-        .then(assignFrontmatter)
-        .then(getImageFileNames);
-    })
+    .then(buildPostCollection)
     // .tap(_.partial(qMkDirP, publicDir))
     // .tap(_.flow(filters.updated, updatePublicDirs))
     // .tap(_.flow(filters.updated, generateIndex))
