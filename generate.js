@@ -135,8 +135,8 @@ function assignBodyHtml (posts) {
  *                             contents of the image directories have been 
  *                             successfully read.           
  */
-function assignImages (updated) {
-  return Q.all(_.map(updated, post =>
+function assignImages (posts) {
+  return Q.all(_.map(posts, post =>
     qReadDir(path.join(post.dir, "images"))
       .then(images => _.assign(post, { images: images }))
   ));
