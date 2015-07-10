@@ -90,32 +90,37 @@ function htmlTag (type, attrs) {
  *                        post objects.
  */
 function buildPostCollection (dirs) {
-  return Q.resolve(_.map(dirs, dir => { 
-    return { dir: path.join(contentDir, dir) };
-  }))
+  return Q.resolve(_.map(dirs, dir => ({ dir: path.join(contentDir, dir) })))
     .then(assignFrontmatter)
+    .then(assignTargetDir)
     .then(assignBodyHtml)
     .then(assignImages);
 }
 
 function assignFrontmatter (posts) {
-  return Q.all(_.map(posts, post => { 
-    return qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
+  return Q.all(_.map(posts, post =>
+    qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
       .then(fm => {
         var frontmatter = JSON.parse(fm);
         
         frontmatter.created = new Date(frontmatter.created);
         frontmatter.modified = new Date();
 
-        return _.assign(post, frontmatter);
+        return _.assign(post, { frontmatter: frontmatter });
       });
-  }));
+  ));
+}
+
+function assignTargetDir (posts) {
+  return Q.resolve(_.map(posts, post =>
+    _.assign(post, { target: path.join(publicDir, post.slug) })
+  ));
 }
 
 function assignBodyHtml (posts) {
   return Q.all(_.map(posts, post =>
     qReadFile(path.join(post.dir, "main.md"), "utf8")
-      .then(md => marked(md))
+      .then(marked)
       .then(html => _.assign(post, { bodyHtml: html }))
   ));
 }
