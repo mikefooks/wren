@@ -19,8 +19,8 @@
     </header>
     <article class="post_box">
       <div class="the_content">
-        <h2><%= post.frontmatter.title %></h2>
-        <h3><%= post.frontmatter.author %></h3>
+        <h3><%= post.frontmatter.title %></h3>
+        <small><%= post.frontmatter.created.toDateString() %></small>
         <%- post.bodyHtml %>
       </div>
     </article>
