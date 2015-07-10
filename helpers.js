@@ -50,18 +50,16 @@ function createDefaultFrontMatter (title) {
 
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
-    // Create the directory
     .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
-    // Write the frontmatter.json file to the directory
-    .then(frontmatter => {
-      return Q.all([
+    .then(frontmatter =>
+      Q.all([
         qFsWriteFile(
           contentDir(nameContentFolder(frontmatter), "frontmatter.json"), 
           JSON.stringify(frontmatter, null, '\t')),
         qFsWriteFile(
           contentDir(nameContentFolder(frontmatter), "main.md"),
-          "<!-- Write your post here! -->")]);
-    });
+          "<!-- Write your post here! -->")])
+    );
 }
 
 module.exports = {

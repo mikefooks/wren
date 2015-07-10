@@ -107,13 +107,13 @@ function assignFrontmatter (posts) {
         frontmatter.modified = new Date();
 
         return _.assign(post, { frontmatter: frontmatter });
-      });
+      })
   ));
 }
 
 function assignTargetDir (posts) {
   return Q.resolve(_.map(posts, post =>
-    _.assign(post, { target: path.join(publicDir, post.slug) })
+    _.assign(post, { target: path.join(publicDir, post.frontmatter.slug) })
   ));
 }
 
@@ -177,19 +177,28 @@ function writeUpdatedFrontmatter (updated) {
  * Takes a collection of (updated) post objects and generates the main index 
  * page to the root of the public folder, based upon the index.ejs template
  * in the theme directory.
- * @param  { Array } updated  A collection of post objects, (presumably, though
- *                            not necessarily) with their update attribute set 
- *                            to true.
+ * @param  { Array } posts    A collection of post objects.
  * @return { Q Promise }      A Q promise fulfilled when the HTML index has 
  *                            been written to the public directory.
  */
-function generateIndex (updated) {
-  var template = readFile(path.join(themeDir, "index.ejs"));
+function generateIndex (posts) {
+  qReadFile(path.join(themeDir, "index.ejs"), "utf8")
+    .then(template => 
+      qFsWriteFile(
+        path.join(publicDir, "index.html"),
+        ejs.compile(template)({ posts: posts })
+    ));
+}
 
-  return qFsWriteFile(
-    path.join(publicDir, "index.html"),
-    ejs.compile(template)({ posts: updated })
-  );
+function generatePosts (posts) {
+  qReadFile(path.join(themeDir, "post.ejs"), "utf8")
+    .then(template =>
+      Q.all(_.map(posts, post =>
+        qFsWriteFile(
+          path.join(post.target, "index.html"),
+          ejs.compile(template)({ post: post })
+        )
+    )));
 }
 
 /**
@@ -231,11 +240,11 @@ function writeResponsiveImages (images) {
 function generateUpdated () {
   return qReadDir(contentDir)
     .then(buildPostCollection)
-    // .tap(_.partial(qMkDirP, publicDir))
-    // .tap(_.flow(filters.updated, updatePublicDirs))
-    // .tap(_.flow(filters.updated, generateIndex))
-    // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
-    // .then(_.flow(filters.updated, getImageFileNames))
+    .tap(_.partial(qMkDirP, publicDir))
+    .tap(_.flow(filters.updated, updatePublicDirs))
+    .tap(_.flow(filters.updated, generateIndex))
+    .tap(_.flow(filters.updated, generatePosts))
+    .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
     .then(console.log)
     .fail(console.log);
 }
