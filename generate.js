@@ -244,8 +244,8 @@ function generateUpdated () {
     .tap(_.flow(filters.updated, updatePublicDirs))
     .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
-    .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
-    .then(console.log)
+    // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
+    // .then(console.log)
     .fail(console.log);
 }
 

@@ -17,10 +17,12 @@
       .com
       </h1>
     </header>
-    <article class="full_post">
-      <h2><%= post.frontmatter.title %></h2>
-      <h3><%= post.frontmatter.author %></h3>
-      <%- post.bodyHtml %>
+    <article class="post_box">
+      <div class="the_content">
+        <h2><%= post.frontmatter.title %></h2>
+        <h3><%= post.frontmatter.author %></h3>
+        <%- post.bodyHtml %>
+      </div>
     </article>
     </main>
     <footer><small>&copy; 2015 Mike Fooks</small></footer>
