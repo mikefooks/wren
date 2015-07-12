@@ -3,6 +3,7 @@
   "description": "attempting to make a site generator work",
   "author": "Mike Fooks <mikefooks@gmail.com>",
   "private": true,
+  "scripts": {},
   "devDependencies": {},
   "dependencies": {
     "async": "^1.0.0",

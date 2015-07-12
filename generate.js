@@ -36,6 +36,16 @@ var filters = {
   updated: posts => _.filter(posts, post => post.frontmatter.update)
 };
 
+var config = {
+  responsiveImages: {
+    small: 400,
+    medium: 600,
+    large: 1000
+  }
+}
+
+var imageRe = /(\.jpg)|(\.gif)|(\.png)$/;
+
 marked.setOptions({
   breaks: false,
   gfm: true,
@@ -45,19 +55,6 @@ marked.setOptions({
 /*
   UTILITIES
  */
-
-/*
- * Not unlike a tap method, this executes a promise-returning function
- * but then returns a promise that resolves the arguments
- * passed to the original function.
- */
-function sideEffect (fn) {
-  return function () {
-    var args = Array.prototype.slice.call(arguments, 0);
-
-    return fn.apply(this, args).then(() => args);
-  };
-}
 
 /**
  * Makes a string HTML tag.
@@ -202,34 +199,39 @@ function generatePosts (posts) {
 }
 
 /**
- * Resizes and possibly extracts a colour channel from an image in order to
- * bounce it to black and white.
- * @param  { String } size      The width in pixel of the output image---the image
- *                              will retain its original aspect ratio.
- * @param  { String } path      The path of the original image to be resized etc.
- * @param  { String } target    The destination path of the converted image.
+ * Takes a single image and, using the config object specification, creates new
+ * responsive images and puts them in the public asset folder for the post.
+ * @param  { String } path      The full file name of the original image to be
+ *                              converted.
+ * @param  { String } target    The public directory to which the converted
+ *                              responsive images will be written.
  * @return { Q Promise }        Returns a Q promised that's resolved when the
- *                              image has been written successfully. 
+ *                              responsive images has been written successfully. 
  */
-function convertImage (size, path, target) {
-  return Q.promise(function (resolve, reject) {
-    gm(path)
-      .autoOrient()
-      .resize(size)
-      .write(target, function (err) {
-        if (err) { 
-          return reject(err);
-        } else {
-          return resolve();
-        }
-      });
-  });
+
+function generateImage (image, target) {
+  var imageName = path.basename(image);
+
+  return Q.all(_.map(config.responsiveImages, (width, size) =>
+    Q.promise((resolve, reject) => {
+      var targetName = path.join(target, imageName.replace(imageRe, "_" + size + "$1"));  
+      
+      gm(image)
+        .autoOrient()
+        .resize(width)
+        .write(targetName, function (err) {
+          if (err) { 
+            return reject(err);
+          } else {
+            return resolve();
+          }
+        });
+    })
+  ));
 }
 
-function writeResponsiveImages (images) {
-  return Q.all(_.map(images, image => {
+function generatePostImages (posts) {
 
-  }));
 }
 
 
