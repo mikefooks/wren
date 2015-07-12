@@ -44,7 +44,7 @@ var config = {
   }
 }
 
-var imageRe = /(\.jpg)|(\.gif)|(\.png)$/;
+var imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
 
 marked.setOptions({
   breaks: false,
@@ -212,10 +212,12 @@ function generatePosts (posts) {
 function generateImage (image, target) {
   var imageName = path.basename(image);
 
-  return Q.all(_.map(config.responsiveImages, (width, size) =>
+  return Q.all(_.map(config.responsiveImages, (width, size) => 
     Q.promise((resolve, reject) => {
       var targetName = path.join(target, imageName.replace(imageRe, "_" + size + "$1"));  
       
+      console.log(targetName);
+
       gm(image)
         .autoOrient()
         .resize(width)
@@ -231,9 +233,19 @@ function generateImage (image, target) {
 }
 
 function generatePostImages (posts) {
+  return Q.all(_.map(posts, post => {
+    var factories = _.map(post.images, image =>
+      _.partial(
+        generateImage,
+        path.join(post.dir, "images", image),
+        path.join(post.target, "images")
+      ));
 
+    return _.reduce(factories, (current, pending) =>
+      current.then(pending), qMkDirP(path.join(post.target, "images"))
+    );
+  }));
 }
-
 
 /*
   GENERATE FUNCTIONS
@@ -246,6 +258,7 @@ function generateUpdated () {
     .tap(_.flow(filters.updated, updatePublicDirs))
     .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
+    .tap(_.flow(filters.updated, generatePostImages))
     // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
     // .then(console.log)
     .fail(console.log);
