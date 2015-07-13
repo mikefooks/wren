@@ -37,23 +37,37 @@ var filters = {
 };
 
 var config = {
-  responsiveImages: {
-    small: 400,
-    medium: 600,
-    large: 1000
-  }
-}
+  responsiveImages: [
+    { size: "small", breakpoint: 0, width: 400 },
+    { size: "medium", breakpoint: 480, width: 600 },
+    { size: "large", breakpoint: 768, width: 1000 }
+  ]
+};
 
 var imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
 
 var renderer = new marked.Renderer();
 
+/**
+ * This mess is the img rendering function for marked; it replaces the
+ * regular image rendering witha picture element and all the 
+ * source elements that it contains, based on the responsive image
+ * settings enumerated in the config file.
+ */
 renderer.image = function (href, title, text) {
-  var images = _.map(config.responsiveImages, (width, size) =>
-    path.join("/assets", href.replace(imageRe, "_" + size + "$1"))
+  var src = _.sortBy(config.responsiveImages, "breakpoint"),
+    img = src.splice(0, 1),
+    tags = _.map(src.reverse(), (props) =>
+      "<source srcset='" + 
+      path.join("images", href.replace(imageRe, "_" + props.size + "$1")) + 
+      "' media='(min-width: " + props.breakpoint + "px)'>");
+
+  tags.push("<img srcset='" +
+    path.join("images", href.replace(imageRe, "_" + img[0].size + "$1")) +
+    "' alt='" + text + "'/>\n"
   );
 
-  return images[1];
+  return "<picture>\n" + tags.join("\n") + "</picture>\n";
 }
 
 marked.setOptions({
@@ -61,30 +75,6 @@ marked.setOptions({
   gfm: true,
   smartypants: true
 });
-
-function respImgTest (md) {
-  console.log(marked(md, { renderer: renderer }));
-}
-/*
-  UTILITIES
- */
-
-/**
- * Makes a string HTML tag.
- * @param  {[type]} type  [description]
- * @param  {[type]} attrs [description]
- * @return {[type]}       [description]
- */
-function htmlTag (type, attrs, content) {
-  var tag = "<" + type;
-
-  _.forIn(attrs, (val, key) => {
-    return tag += " " + key + "='" + val + "'";
-  });
-
-  return tag += "/>";
-}
-
 
 /*
   PROMISE-RETURNING FUNCTIONS
@@ -130,7 +120,7 @@ function assignTargetDir (posts) {
 function assignBodyHtml (posts) {
   return Q.all(_.map(posts, post =>
     qReadFile(path.join(post.dir, "main.md"), "utf8")
-      .then(marked)
+      .then(_.partialRight(marked, { renderer: renderer }))
       .then(html => _.assign(post, { bodyHtml: html }))
   ));
 }
@@ -226,13 +216,13 @@ function generatePosts (posts) {
 function generateImage (image, target) {
   var imageName = path.basename(image);
 
-  return Q.all(_.map(config.responsiveImages, (width, size) => 
+  return Q.all(_.map(config.responsiveImages, (props) => 
     Q.promise((resolve, reject) => {
-      var targetName = path.join(target, imageName.replace(imageRe, "_" + size + "$1"));
+      var targetName = path.join(target, imageName.replace(imageRe, "_" + props.size + "$1"));
 
       gm(image)
         .autoOrient()
-        .resize(width)
+        .resize(props.width)
         .write(targetName, function (err) {
           if (err) { 
             return reject(err);
@@ -269,13 +259,13 @@ function generateUpdated () {
     .tap(_.flow(filters.updated, updatePublicDirs))
     .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
-    .tap(_.flow(filters.updated, generatePostImages))
+    .tap(console.log)
+    // .tap(_.flow(filters.updated, generatePostImages))
     // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
     // .then(console.log)
     .fail(console.log);
 }
 
 module.exports = {
-  generateUpdated: generateUpdated,
-  respImgTest: respImgTest
+  generateUpdated: generateUpdated
 };
