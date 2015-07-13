@@ -10,20 +10,20 @@
 <body>
   <div class="container">
     <main>
-    <header class="content_box">
+    <section class="header">
       <h1>
-      mike<br/>
-      fooks<br/>
+      name<br/>
+      here<br/>
       .com
       </h1>
-    </header>
+    </section>
 
     <% posts.forEach(function (post) { %>
-    <article class="content_box">
+    <section>
       <div class="teaser">
         <a href="/<%= post.frontmatter.slug %>/"><h4><%= post.frontmatter.title %></h4></a>
       </div>
-    </article>
+    </section>
     <% }); %>
 
     </main>

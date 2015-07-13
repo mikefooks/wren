@@ -10,15 +10,15 @@
 <body>
   <div class="container">
     <main>
-    <header class="content_box">
+    <section class="header">
       <h1>
-      mike<br/>
-      fooks<br/>
+      name<br/>
+      here<br/>
       .com
       </h1>
-    </header>
-    <article class="post_box">
-      <div class="the_content">
+    </section>
+    <article>
+      <div class="content">
         <h3><%= post.frontmatter.title %></h3>
         <small><%= post.frontmatter.created.toString() %></small>
         <%- post.bodyHtml %>

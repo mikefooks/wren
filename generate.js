@@ -46,12 +46,25 @@ var config = {
 
 var imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
 
+var renderer = new marked.Renderer();
+
+renderer.image = function (href, title, text) {
+  var images = _.map(config.responsiveImages, (width, size) =>
+    path.join("/assets", href.replace(imageRe, "_" + size + "$1"))
+  );
+
+  return images[1];
+}
+
 marked.setOptions({
   breaks: false,
   gfm: true,
   smartypants: true
 });
 
+function respImgTest (md) {
+  console.log(marked(md, { renderer: renderer }));
+}
 /*
   UTILITIES
  */
@@ -62,7 +75,7 @@ marked.setOptions({
  * @param  {[type]} attrs [description]
  * @return {[type]}       [description]
  */
-function htmlTag (type, attrs) {
+function htmlTag (type, attrs, content) {
   var tag = "<" + type;
 
   _.forIn(attrs, (val, key) => {
@@ -200,7 +213,8 @@ function generatePosts (posts) {
 
 /**
  * Takes a single image and, using the config object specification, creates new
- * responsive images and puts them in the public asset folder for the post.
+ * responsive images and puts them in the public asset folder for the post. NB:
+ * For each original image, the responsive images are generated in parallel.
  * @param  { String } path      The full file name of the original image to be
  *                              converted.
  * @param  { String } target    The public directory to which the converted
@@ -214,9 +228,7 @@ function generateImage (image, target) {
 
   return Q.all(_.map(config.responsiveImages, (width, size) => 
     Q.promise((resolve, reject) => {
-      var targetName = path.join(target, imageName.replace(imageRe, "_" + size + "$1"));  
-      
-      console.log(targetName);
+      var targetName = path.join(target, imageName.replace(imageRe, "_" + size + "$1"));
 
       gm(image)
         .autoOrient()
@@ -233,17 +245,16 @@ function generateImage (image, target) {
 }
 
 function generatePostImages (posts) {
-  return Q.all(_.map(posts, post => {
-    var factories = _.map(post.images, image =>
-      _.partial(
-        generateImage,
-        path.join(post.dir, "images", image),
-        path.join(post.target, "images")
-      ));
+  return Q.all(_.map(posts,
+    post => {
+      var factories = _.map(post.images,
+        image => _.partial(generateImage,
+          path.join(post.dir, "images", image),
+          path.join(post.target, "images")));
 
-    return _.reduce(factories, (current, pending) =>
-      current.then(pending), qMkDirP(path.join(post.target, "images"))
-    );
+      return _.reduce(factories, 
+        (current, pending) => current.then(pending),
+        qMkDirP(path.join(post.target, "images")));
   }));
 }
 
@@ -265,5 +276,6 @@ function generateUpdated () {
 }
 
 module.exports = {
-  generateUpdated: generateUpdated
+  generateUpdated: generateUpdated,
+  respImgTest: respImgTest
 };
