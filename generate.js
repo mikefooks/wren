@@ -4,7 +4,6 @@ var fs = require("fs"),
   path = require("path"),
   url = require("url"),
   _ = require("lodash"),
-  H = require("./helpers.js"),
   Q = require("q"),
   gm = require("gm"),
   marked = require("marked"),
@@ -97,6 +96,16 @@ function buildPostCollection (dirs) {
     .then(assignImages);
 }
 
+/**
+ * Takes the collection of incipient post objects (just object containing
+ * the .dir property) and assigns to each object its corresponding
+ * frontmatter, parsed from the frontmatter.json file.
+ * @param  { Array } posts    A collection of objects each containing a
+ *                            .dir property. 
+ * @return { Q Promise }      A promise that resolves when all frontmatter.json
+ *                            files have been read, parsed, and their contents
+ *                            assigned to the appropriate post object.       
+ */
 function assignFrontmatter (posts) {
   return Q.all(_.map(posts, post =>
     qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
@@ -111,6 +120,11 @@ function assignFrontmatter (posts) {
   ));
 }
 
+/**
+ * [assignTargetDir description]
+ * @param  {[type]} posts [description]
+ * @return {[type]}       [description]
+ */
 function assignTargetDir (posts) {
   return Q.resolve(_.map(posts, post =>
     _.assign(post, { target: path.join(publicDir, post.frontmatter.slug) })
