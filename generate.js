@@ -39,7 +39,7 @@ var config = {
   responsiveImages: [
     { size: "small", breakpoint: 0, width: 400 },
     { size: "medium", breakpoint: 480, width: 600 },
-    { size: "large", breakpoint: 768, width: 1000 }
+    { size: "large", breakpoint: 860, width: 1000 }
   ]
 };
 
@@ -236,6 +236,7 @@ function generateImage (image, target) {
 
       gm(image)
         .autoOrient()
+        .channel("red")
         .resize(props.width)
         .write(targetName, function (err) {
           if (err) { 
@@ -273,8 +274,7 @@ function generateUpdated () {
     .tap(_.flow(filters.updated, updatePublicDirs))
     .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
-    .tap(console.log)
-    // .tap(_.flow(filters.updated, generatePostImages))
+    .tap(_.flow(filters.updated, generatePostImages))
     // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
     // .then(console.log)
     .fail(console.log);

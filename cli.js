@@ -3,7 +3,7 @@
 var path = require("path"),
   fs = require("fs"),
   _ = require("lodash"),
-  Q = require("q"), 
+  Q = require("q"),
   program = require("commander"),
   G = require("./generate.js"),
   mkdirp = require("mkdirp"),
@@ -57,7 +57,7 @@ function nameContentFolder(frontmatter) {
  * Is fed the title through the cli's new command and builds an object
  * which will ultimately become the new post's frontmatter.json file.
  * @param  { String } title   The String title for the new post.
- * @return { Q Promise }      A fulfilled Q promise bearing the new 
+ * @return { Q Promise }      A fulfilled Q promise bearing the new
  *                            frontmatter object.
  */
 function createDefaultFrontMatter (title) {
@@ -83,11 +83,12 @@ function createNewPost (title) {
       Q.all([
         qMkDirP(contentDir(nameContentFolder(frontmatter), "images")),
         qFsWriteFile(
-          contentDir(nameContentFolder(frontmatter), "frontmatter.json"), 
+          contentDir(nameContentFolder(frontmatter), "frontmatter.json"),
           JSON.stringify(frontmatter, null, '\t')),
         qFsWriteFile(
           contentDir(nameContentFolder(frontmatter), "main.md"),
-          "<!-- Write your post here! -->")])
+          "<!-- Write your post here! -->")
+      ])
     );
 }
 
