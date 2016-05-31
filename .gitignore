@@ -5,3 +5,4 @@ public/
 *.swp
 theme/styles/bourbon/
 theme/styles/.sass-cache/
+*.swo

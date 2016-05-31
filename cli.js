@@ -1,6 +1,6 @@
 "use strict";
 
-var path = require("path"),
+let path = require("path"),
   fs = require("fs"),
   _ = require("lodash"),
   Q = require("q"),
@@ -10,29 +10,33 @@ var path = require("path"),
   rimraf = require("rimraf"),
   uuid = require("node-uuid");
 
-var CWD = process.cwd();
+let CWD = process.cwd();
 
-var qMkDirP = Q.nfbind(mkdirp),
+let qMkDirP = Q.nfbind(mkdirp),
   qRimraf = Q.nfbind(rimraf),
   qFsReadFile = Q.nfbind(fs.readFile),
   qFsWriteFile = Q.nfbind(fs.writeFile);
 
-var config = {
+let config = {
   publicFolder: path.join(CWD, "public"),
   contentFolder: path.join(CWD, "content"),
   author: "Mike Fooks"
 };
 
-var contentDir = _.partial(path.join, config.contentFolder);
+let contentDir = _.partial(path.join, config.contentFolder);
 
 program
   .version("0.0.1")
-  .option("new <s>", "Creates a new post", createNewPost)
   .option("delete <s>", "Deletes a post", deletePost)
   .option("generate", "Generates!", G.generateUpdated)
-  .parse(process.argv);
 
+program
+  .command("new")
+  .description("Creates a new post")
+  .option("-t, --title <s>", "Adds a title to the post")
+  .action(options => createNewPost(options.title));
 
+program.parse(process.argv);
 /*
   UTILITIES
  */
@@ -42,7 +46,7 @@ function slugify (str) {
 }
 
 function nameContentFolder(frontmatter) {
-  var dateString = frontmatter.created
+  let dateString = frontmatter.created
     .substring(0, 10)
     .replace(/\-/g, "_");
 
@@ -61,13 +65,14 @@ function nameContentFolder(frontmatter) {
  *                            frontmatter object.
  */
 function createDefaultFrontMatter (title) {
-  var created = new Date().toISOString(),
+  let created = new Date().toISOString(),
+    id =  uuid.v4(),
     frontmatter = {
-      id: uuid.v4(),
-      title: title,
+      id,
+      title: title || "",
       author: config.author,
-      slug: slugify(title),
-      created: created,
+      slug: title ? slugify(title) : id,
+      created,
       modified: created,
       keywords: [],
       update: true
@@ -78,6 +83,7 @@ function createDefaultFrontMatter (title) {
 
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
+    .tap(console.log)
     .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
     .then(frontmatter =>
       Q.all([
@@ -93,11 +99,11 @@ function createNewPost (title) {
 }
 
 function deletePost (dir) {
-  var contentPath = path.join(config.contentFolder, dir);
+  let contentPath = path.join(config.contentFolder, dir);
 
   return qFsReadFile(path.join(contentPath, "frontmatter.json"))
     .then(fm => {
-      var slug = JSON.parse(fm).slug;
+      let slug = JSON.parse(fm).slug;
 
       return Q.all([
         qRimraf(contentPath),
