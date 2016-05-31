@@ -14,14 +14,18 @@
 <body>
   <div class="container">
     <main>
-    <section class="header">
-      <h1>
-      mike<br/>
-      fooks<br/>
-      .com
-      </h1>
+    <section>
+      <div class="index_nobreaks">
+        <h1>mikefooks.com</h1>
+      </div>
+      <div class="index_breaks">
+        <h1>
+        mike<br />
+        fooks<br/>
+        .com
+        </h1>
+      </div>
     </section>
-
     <% posts.forEach(function (post) { %>
     <section>
       <div class="teaser">
@@ -29,7 +33,6 @@
       </div>
     </section>
     <% }); %>
-
     </main>
     <footer><small>&copy; 2015 Mike Fooks</small></footer>
   </div>

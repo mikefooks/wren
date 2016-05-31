@@ -12,7 +12,12 @@ var fs = require("fs"),
   mkdirp = require("mkdirp");
 
 var config = {
-  rootUrl: "http://localhost/"
+  rootUrl: "http://localhost/",
+  responsiveImages: [
+    { size: "small", breakpoint: 0, width: 400 },
+    { size: "medium", breakpoint: 480, width: 600 },
+    { size: "large", breakpoint: 860, width: 1000 }
+  ]
 };
 
 var CWD = process.cwd(),
@@ -35,21 +40,13 @@ var filters = {
   updated: posts => _.filter(posts, post => post.frontmatter.update)
 };
 
-var config = {
-  responsiveImages: [
-    { size: "small", breakpoint: 0, width: 400 },
-    { size: "medium", breakpoint: 480, width: 600 },
-    { size: "large", breakpoint: 860, width: 1000 }
-  ]
-};
-
 var imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
 
 var renderer = new marked.Renderer();
 
 /**
  * This mess is the img rendering function for marked; it replaces the
- * regular image rendering witha picture element and all the 
+ * regular image rendering witha picture element and all the
  * source elements that it contains, based on the responsive image
  * settings enumerated in the config file.
  */
@@ -57,8 +54,8 @@ renderer.image = function (href, title, text) {
   var src = _.sortBy(config.responsiveImages, "breakpoint"),
     img = src.splice(0, 1),
     tags = _.map(src.reverse(), (props) =>
-      "<source srcset='" + 
-      path.join("images", href.replace(imageRe, "_" + props.size + "$1")) + 
+      "<source srcset='" +
+      path.join("images", href.replace(imageRe, "_" + props.size + "$1")) +
       "' media='(min-width: " + props.breakpoint + "px)'>");
 
   tags.push("<img srcset='" +
@@ -81,11 +78,11 @@ marked.setOptions({
 
 /**
  * Builds a collection of objects representing all the posts to be updated,
- * and all the necessary properties required to generate the html files 
+ * and all the necessary properties required to generate the html files
  * and directories for said posts.
- * @param  {Array} posts  An array of directory names (strings) from the 
+ * @param  {Array} posts  An array of directory names (strings) from the
  *                        content folder
- * @return {Q Promise}    A fulfilled promise whose value is a collection of 
+ * @return {Q Promise}    A fulfilled promise whose value is a collection of
  *                        post objects.
  */
 function buildPostCollection (dirs) {
@@ -101,17 +98,17 @@ function buildPostCollection (dirs) {
  * the .dir property) and assigns to each object its corresponding
  * frontmatter, parsed from the frontmatter.json file.
  * @param  { Array } posts    A collection of objects each containing a
- *                            .dir property. 
+ *                            .dir property.
  * @return { Q Promise }      A promise that resolves when all frontmatter.json
  *                            files have been read, parsed, and their contents
- *                            assigned to the appropriate post object.       
+ *                            assigned to the appropriate post object.
  */
 function assignFrontmatter (posts) {
   return Q.all(_.map(posts, post =>
     qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
       .then(fm => {
         var frontmatter = JSON.parse(fm);
-        
+
         frontmatter.created = new Date(frontmatter.created);
         frontmatter.modified = new Date();
 
@@ -141,13 +138,13 @@ function assignBodyHtml (posts) {
 
 /**
  * Takes a collection of post objects and returns a two-dimensional array
- * containing the names of all the images found in each post's image 
+ * containing the names of all the images found in each post's image
  * directory.
- * @param  { Array } updated   A collection of post objects whose images we 
- *                             would like to know.   
+ * @param  { Array } updated   A collection of post objects whose images we
+ *                             would like to know.
  * @return { Q Promise }       returns a Q Promise that's resolved when the
- *                             contents of the image directories have been 
- *                             successfully read.           
+ *                             contents of the image directories have been
+ *                             successfully read.
  */
 function assignImages (posts) {
   return Q.all(_.map(posts, post =>
@@ -188,16 +185,16 @@ function writeUpdatedFrontmatter (updated) {
 }
 
 /**
- * Takes a collection of (updated) post objects and generates the main index 
+ * Takes a collection of (updated) post objects and generates the main index
  * page to the root of the public folder, based upon the index.ejs template
  * in the theme directory.
  * @param  { Array } posts    A collection of post objects.
- * @return { Q Promise }      A Q promise fulfilled when the HTML index has 
+ * @return { Q Promise }      A Q promise fulfilled when the HTML index has
  *                            been written to the public directory.
  */
 function generateIndex (posts) {
   qReadFile(path.join(themeDir, "index.ejs"), "utf8")
-    .then(template => 
+    .then(template =>
       qFsWriteFile(
         path.join(publicDir, "index.html"),
         ejs.compile(template)({ posts: posts })
@@ -224,13 +221,13 @@ function generatePosts (posts) {
  * @param  { String } target    The public directory to which the converted
  *                              responsive images will be written.
  * @return { Q Promise }        Returns a Q promised that's resolved when the
- *                              responsive images has been written successfully. 
+ *                              responsive images has been written successfully.
  */
 
 function generateImage (image, target) {
   var imageName = path.basename(image);
 
-  return Q.all(_.map(config.responsiveImages, (props) => 
+  return Q.all(_.map(config.responsiveImages, (props) =>
     Q.promise((resolve, reject) => {
       var targetName = path.join(target, imageName.replace(imageRe, "_" + props.size + "$1"));
 
@@ -239,7 +236,7 @@ function generateImage (image, target) {
         .channel("red")
         .resize(props.width)
         .write(targetName, function (err) {
-          if (err) { 
+          if (err) {
             return reject(err);
           } else {
             return resolve();
@@ -257,14 +254,14 @@ function generatePostImages (posts) {
           path.join(post.dir, "images", image),
           path.join(post.target, "images")));
 
-      return _.reduce(factories, 
+      return _.reduce(factories,
         (current, pending) => current.then(pending),
         qMkDirP(path.join(post.target, "images")));
   }));
 }
 
 /*
-  GENERATE FUNCTIONS
+  GENERATOR FUNCTIONS
  */
 
 function generateUpdated () {
@@ -274,7 +271,7 @@ function generateUpdated () {
     .tap(_.flow(filters.updated, updatePublicDirs))
     .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
-    .tap(_.flow(filters.updated, generatePostImages))
+    // .tap(_.flow(filters.updated, generatePostImages))
     // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
     // .then(console.log)
     .fail(console.log);
