@@ -46,7 +46,7 @@ var renderer = new marked.Renderer();
 
 /**
  * This mess is the img rendering function for marked; it replaces the
- * regular image rendering witha picture element and all the
+ * regular image rendering with a picture element and all the
  * source elements that it contains, based on the responsive image
  * settings enumerated in the config file.
  */
@@ -271,9 +271,9 @@ function generateUpdated () {
     .tap(_.flow(filters.updated, updatePublicDirs))
     .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
-    // .tap(_.flow(filters.updated, generatePostImages))
-    // .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
-    // .then(console.log)
+    .tap(_.flow(filters.updated, generatePostImages))
+    .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
+    .then(console.log)
     .fail(console.log);
 }
 

@@ -3,3 +3,5 @@ public/
 *.JPG
 *.jpg
 *.swp
+theme/styles/bourbon/
+theme/styles/.sass-cache/

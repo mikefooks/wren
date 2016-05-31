@@ -13,25 +13,14 @@
 </head>
 <body>
   <div class="container">
-    <main>
-    <header class="post_nobreaks">
+    <div class="title">
       <h1>mikefooks.com</h1>
-    </header>
-    <header class="post_breaks">
-      <h1>
-      mike<br/>
-      fooks<br/>
-      .com
-      </h1>
-    </header>
-    <article>
-      <div class="content">
-        <h3><%= post.frontmatter.title %></h3>
-        <small><%= post.frontmatter.created.toString() %></small>
-        <%- post.bodyHtml %>
-      </div>
-    </article>
-    </main>
+    </div>
+    <div class="content">
+      <h3><%= post.frontmatter.title %></h3>
+      <small><%= post.frontmatter.created.toString() %></small>
+      <%- post.bodyHtml %>
+    </div>
     <footer><small>&copy; 2015 Mike Fooks</small></footer>
   </div>
 </body>
