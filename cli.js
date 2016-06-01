@@ -14,6 +14,7 @@ let CWD = process.cwd();
 
 let qMkDirP = Q.nfbind(mkdirp),
   qRimraf = Q.nfbind(rimraf),
+  qFsExists = Q.nfbind(fs.exists),
   qFsReadFile = Q.nfbind(fs.readFile),
   qFsWriteFile = Q.nfbind(fs.writeFile);
 
@@ -27,8 +28,27 @@ let contentDir = _.partial(path.join, config.contentFolder);
 
 program
   .version("0.0.1")
-  .option("delete <s>", "Deletes a post", deletePost)
-  .option("generate", "Generates!", G.generateUpdated)
+
+program
+  .command("generate")
+  .description("generates the site")
+  .option("-u, --updated", "regenerates only those posts with the 'update' attribute set to true")
+  .option("-a, --all", "Regenerates all the posts")
+  .action(function (options) {
+    if (options.updated && options.all) {
+      return console.log("please choose --updated or --all, but not both");
+    }
+
+    if (!options.updated && !options.all) {
+      return console.log("please choose either --updated or --all");
+    }
+    
+    if (options.all) {
+      G.generateAll();
+    } else if (options.updated) {
+      G.generateUpdated();
+    }
+  });
 
 program
   .command("new")
@@ -37,6 +57,7 @@ program
   .action(options => createNewPost(options.title));
 
 program.parse(process.argv);
+
 /*
   UTILITIES
  */
@@ -81,9 +102,18 @@ function createDefaultFrontMatter (title) {
   return Q.resolve(frontmatter);
 }
 
+function checkContentDir () {
+  return qFsExists(config.contentFolder)
+    .then(function (exists) {
+      if (!exists) {
+        return qMkDirP(config.contentFolder);
+      }
+    });
+}
+
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
-    .tap(console.log)
+    .tap(checkContentDir)
     .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
     .then(frontmatter =>
       Q.all([

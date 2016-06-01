@@ -1,6 +1,6 @@
 "use strict";
 
-var fs = require("fs"),
+let fs = require("fs"),
   path = require("path"),
   url = require("url"),
   _ = require("lodash"),
@@ -11,7 +11,7 @@ var fs = require("fs"),
   rimraf = require("rimraf"),
   mkdirp = require("mkdirp");
 
-var config = {
+let config = {
   rootUrl: "http://localhost/",
   responsiveImages: [
     { size: "small", breakpoint: 0, width: 400 },
@@ -20,29 +20,30 @@ var config = {
   ]
 };
 
-var CWD = process.cwd(),
+let CWD = process.cwd(),
   contentDir = path.join(CWD, "content"),
   publicDir = path.join(CWD, "public"),
   themeDir = path.join(CWD, "theme");
 
-var readFile = _.partialRight(fs.readFileSync, "utf8"),
+let readFile = _.partialRight(fs.readFileSync, "utf8"),
   parseJSON = _.flow(readFile, JSON.parse),
   compileMarkdown = _.flow(readFile, marked);
 
-var qReadDir = Q.nfbind(fs.readdir),
+let qReadDir = Q.nfbind(fs.readdir),
   qReadFile = Q.nfbind(fs.readFile),
   qMkDir = Q.nfbind(fs.mkdir),
+  qRimraf = Q.nfbind(rimraf),
   qFsExists = Q.nfbind(fs.exists),
   qMkDirP = Q.nfbind(mkdirp),
   qFsWriteFile = Q.nfbind(fs.writeFile);
 
-var filters = {
+let filters = {
   updated: posts => _.filter(posts, post => post.frontmatter.update)
 };
 
-var imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
+let imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
 
-var renderer = new marked.Renderer();
+let renderer = new marked.Renderer();
 
 /**
  * This mess is the img rendering function for marked; it replaces the
@@ -51,7 +52,7 @@ var renderer = new marked.Renderer();
  * settings enumerated in the config file.
  */
 renderer.image = function (href, title, text) {
-  var src = _.sortBy(config.responsiveImages, "breakpoint"),
+  let src = _.sortBy(config.responsiveImages, "breakpoint"),
     img = src.splice(0, 1),
     tags = _.map(src.reverse(), (props) =>
       "<source srcset='" +
@@ -107,7 +108,7 @@ function assignFrontmatter (posts) {
   return Q.all(_.map(posts, post =>
     qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
       .then(fm => {
-        var frontmatter = JSON.parse(fm);
+        let frontmatter = JSON.parse(fm);
 
         frontmatter.created = new Date(frontmatter.created);
         frontmatter.modified = new Date();
@@ -173,7 +174,7 @@ function updatePublicDirs (updated) {
  */
 function writeUpdatedFrontmatter (updated) {
   return Q.all(_.map(updated, post => {
-    var frontmatter = _.clone(post.frontmatter);
+    let frontmatter = _.clone(post.frontmatter);
 
     frontmatter.update = false;
 
@@ -225,11 +226,11 @@ function generatePosts (posts) {
  */
 
 function generateImage (image, target) {
-  var imageName = path.basename(image);
+  let imageName = path.basename(image);
 
   return Q.all(_.map(config.responsiveImages, (props) =>
     Q.promise((resolve, reject) => {
-      var targetName = path.join(target, imageName.replace(imageRe, "_" + props.size + "$1"));
+      let targetName = path.join(target, imageName.replace(imageRe, "_" + props.size + "$1"));
 
       gm(image)
         .autoOrient()
@@ -249,7 +250,7 @@ function generateImage (image, target) {
 function generatePostImages (posts) {
   return Q.all(_.map(posts,
     post => {
-      var factories = _.map(post.images,
+      let factories = _.map(post.images,
         image => _.partial(generateImage,
           path.join(post.dir, "images", image),
           path.join(post.target, "images")));
@@ -277,6 +278,21 @@ function generateUpdated () {
     .fail(console.log);
 }
 
+function generateAll () {
+  return qReadDir(contentDir)
+    .then(buildPostCollection)
+    .tap(_.partial(qRimraf, publicDir))
+    .tap(_.partial(qMkDirP, publicDir))
+    .tap(updatePublicDirs)
+    .tap(generateIndex)
+    .tap(generatePosts)
+    .tap(generatePostImages)
+    .tap(writeUpdatedFrontmatter)
+    .then(console.log)
+    .fail(console.log);
+}
+
 module.exports = {
-  generateUpdated: generateUpdated
+  generateUpdated,
+  generateAll
 };
