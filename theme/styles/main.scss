@@ -11,13 +11,27 @@ h1, h2, h3, h4, h5, h6, p, small {
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+}
+
 html {
   @include vr-baseline(1rem, 1.618rem);
+  font-family: "Roboto", sans-serif;
 }
 
 h1 {
-  font-size: 6em;
+  font-size: 6rem;
   line-height: vr(1rem, 3);
+  margin-top: vr(1rem, 1);
+  margin-left: vr(1rem, 1);
+}
+
+h3 {
+  font-size: 3rem;
+  line-height: vr(1rem, 2);
+  margin-top: vr(1rem, 1);
+  text-align: right;
 }
 
 body {
@@ -27,5 +41,16 @@ body {
 
 .container {
   margin: 0 auto;
-  max-width: 800px;
+}
+
+.title {
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.content {
+  position: relative;
+  width: 40%;
+  margin: 0 auto;
 }
