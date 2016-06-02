@@ -1,2 +1,31 @@
 @import "bourbon/bourbon";
 @import "normalize";
+@import "vertical-rhythmic";
+
+* {
+  box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6, p, small {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  @include vr-baseline(1rem, 1.618rem);
+}
+
+h1 {
+  font-size: 6em;
+  line-height: vr(1rem, 3);
+}
+
+body {
+  background-color: #222;
+  color: #bbb;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 800px;
+}

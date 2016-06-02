@@ -113,7 +113,6 @@ function checkContentDir () {
 
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
-    .tap(checkContentDir)
     .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
     .then(frontmatter =>
       Q.all([
