@@ -14,14 +14,13 @@
 <body>
   <div class="container">
     <div class="title">
-      <h2>mikefooks.com</h2>
+      <h1>mike<br />fooks<br />.com</h1>
     </div>
     <% posts.forEach(function (post) { %>
-      <div class="teaser">
-        <a href="/<%= post.frontmatter.slug %>/"><h4><%= post.frontmatter.title %></h4></a>
+      <div class="content">
+        <a href="/blog/<%= post.frontmatter.slug %>/"><h3><%= post.frontmatter.title %></h3></a>
       </div>
     <% }); %>
-    <footer><small>&copy; 2015 Mike Fooks</small></footer>
   </div>
 </body>
 </html>

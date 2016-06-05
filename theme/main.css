@@ -364,4 +364,79 @@ textarea {
   font: inherit;
   /* 2 */ }
 
+/*! vertical-rhythmic 2.0.2 (https://github.com/pyrsmk/vertical-rhythmic) */
+/*
+	number $vr-ratio
+	number $vr-root-px
+*/
+/*
+	Establish baseline
+
+	Parameters
+		number $font-size
+		number $line-height
+*/
+/*
+	Return a rhythm
+
+	Parameters
+		number $font-size
+		number $factor
+
+	Return
+		number
+*/
+/*
+	Convert REM value to PX
+
+	Parameters
+		number $value
+
+	Return
+		number
+*/
+* {
+  box-sizing: border-box; }
+
+h1, h2, h3, h4, h5, h6, p, small {
+  margin: 0;
+  padding: 0; }
+
+html, body {
+  width: 100%; }
+
+html {
+  font-size: 1rem;
+  line-height: 1.618rem;
+  font-family: "Roboto", sans-serif; }
+
+h1 {
+  font-size: 6rem;
+  line-height: 4.854rem;
+  margin-top: 1.618rem;
+  margin-left: 1.618rem; }
+
+h3 {
+  font-size: 3rem;
+  line-height: 3.236rem;
+  margin-top: 1.618rem;
+  text-align: right; }
+
+body {
+  background-color: #222;
+  color: #bbb; }
+
+.container {
+  margin: 0 auto; }
+
+.title {
+  position: fixed;
+  left: 0;
+  top: 0; }
+
+.content {
+  position: relative;
+  width: 40%;
+  margin: 0 auto; }
+
 /*# sourceMappingURL=main.css.map */

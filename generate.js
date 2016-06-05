@@ -12,7 +12,7 @@ let fs = require("fs"),
   mkdirp = require("mkdirp");
 
 let config = {
-  rootUrl: "http://localhost/",
+  rootUrl: "http://localhost/blog",
   responsiveImages: [
     { size: "small", breakpoint: 0, width: 400 },
     { size: "medium", breakpoint: 480, width: 600 },
@@ -129,6 +129,19 @@ function assignTargetDir (posts) {
   ));
 }
 
+function copyFile (source, target) {
+  return Q.Promise(function (resolve, reject) {
+    let reader = fs.createReadStream(source),
+      writer = fs.createWriteStream(target)
+
+    reader.on("end", function () {
+      resolve();
+    });
+
+    reader.pipe(writer)
+  });
+}
+
 function assignBodyHtml (posts) {
   return Q.all(_.map(posts, post =>
     qReadFile(path.join(post.dir, "main.md"), "utf8")
@@ -198,7 +211,7 @@ function generateIndex (posts) {
     .then(template =>
       qFsWriteFile(
         path.join(publicDir, "index.html"),
-        ejs.compile(template)({ posts: posts })
+        ejs.compile(template)({ posts: posts, config: config })
     ));
 }
 
@@ -208,7 +221,7 @@ function generatePosts (posts) {
       Q.all(_.map(posts, post =>
         qFsWriteFile(
           path.join(post.target, "index.html"),
-          ejs.compile(template)({ post: post })
+          ejs.compile(template)({ post: post, config: config })
         )
     )));
 }
@@ -268,9 +281,6 @@ function generatePostImages (posts) {
 function generateUpdated () {
   return qReadDir(contentDir)
     .then(buildPostCollection)
-    .tap(_.partial(qMkDirP, publicDir))
-    .tap(_.flow(filters.updated, updatePublicDirs))
-    .tap(_.flow(filters.updated, generateIndex))
     .tap(_.flow(filters.updated, generatePosts))
     .tap(_.flow(filters.updated, generatePostImages))
     .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
@@ -287,8 +297,19 @@ function generateAll () {
     .tap(generateIndex)
     .tap(generatePosts)
     .tap(generatePostImages)
+    .tap(function (posts) {
+      let re = /.css$/;
+ 
+      return qReadDir(themeDir)
+        .then(_.partialRight(_.filter, file => re.test(file)))
+        .then(function (files) {
+          return Q.all(_.map(files, function (file) {
+            return copyFile(path.join(themeDir, file), path.join(publicDir, file));
+          }));
+        });
+    })
     .tap(writeUpdatedFrontmatter)
-    .then(console.log)
+    // .then(console.log)
     .fail(console.log);
 }
 
