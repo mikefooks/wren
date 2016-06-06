@@ -90,6 +90,7 @@ marked.setOptions({
 function buildPostCollection (dirs) {
   return Q.resolve(_.map(dirs, dir => ({ dir: path.join(contentDir, dir) })))
     .then(assignFrontmatter)
+    .then(updateSlugs)
     .then(assignTargetDir)
     .then(assignBodyHtml)
     .then(assignImages);
@@ -166,6 +167,13 @@ function assignImages (posts) {
     qReadDir(path.join(post.dir, "images"))
       .then(images => _.assign(post, { images: images }))
   ));
+}
+
+function updateSlugs (posts) {
+  return Q.resolve(_.map(posts, post => {
+    post.frontmatter.slug = slugify(post.title);
+    return post;
+  }));
 }
 
 /**

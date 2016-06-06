@@ -22,6 +22,7 @@ let Q = require("q"),
 function compilePostCollection (dirs) {
   return Q.resolve(_.map(dirs, dir => ({ dir: path.join(contentDir, dir) })))
     .then(assignFrontmatter)
+    .then(updateSlugs)
     .then(assignTargetDir)
     .then(assignBodyHtml)
     .then(assignImages);
@@ -51,13 +52,20 @@ function assignFrontmatter (posts) {
   ));
 }
 
+function updateSlugs (posts) {
+  return Q.resolve(_.map(posts, post => {
+    post.frontmatter.slug = slufiy(post.title);
+    return post;
+  }));
+}
+
 /**
  * [assignTargetDir description]
  * @param  {[type]} posts [description]
  * @return {[type]}       [description]
  */
 function assignTargetDir (posts) {
-  return Q.resolve(_.map(posts, post =>
+  return Q.resolve(_.map(posts, post => {
     _.assign(post, { target: path.join(publicDir, post.frontmatter.slug) })
   ));
 }
