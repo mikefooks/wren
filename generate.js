@@ -81,6 +81,7 @@ marked.setOptions({
  * Builds a collection of objects representing all the posts to be updated,
  * and all the necessary properties required to generate the html files
  * and directories for said posts.
+ *
  * @param  {Array} posts  An array of directory names (strings) from the
  *                        content folder
  * @return {Q Promise}    A fulfilled promise whose value is a collection of
@@ -154,7 +155,7 @@ function assignBodyHtml (posts) {
  * Takes a collection of post objects and returns a two-dimensional array
  * containing the names of all the images found in each post's image
  * directory.
- * @param  { Array } updated   A collection of post objects whose images we
+ * @param  { Array } posts     A collection of post objects whose images we
  *                             would like to know.
  * @return { Q Promise }       returns a Q Promise that's resolved when the
  *                             contents of the image directories have been
