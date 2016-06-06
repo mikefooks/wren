@@ -2,7 +2,8 @@
 
 let Q = require("q"),
   _ = require("lodash"),
-  path = require("path");
+  path = require("path"),
+  qFn = require("./promisified_fns.js");
 
 /**
  * POST COMPILATION FUNCTIONS
@@ -38,7 +39,7 @@ function compilePostCollection (dirs) {
  */
 function assignFrontmatter (posts) {
   return Q.all(_.map(posts, post =>
-    qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
+    qFn.fsReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
       .then(fm => {
         let frontmatter = JSON.parse(fm);
 
@@ -69,7 +70,7 @@ function assignTargetDir (posts) {
  */
 function assignBodyHtml (posts) {
   return Q.all(_.map(posts, post =>
-    qReadFile(path.join(post.dir, "main.md"), "utf8")
+    qFn.fsReadFile(path.join(post.dir, "main.md"), "utf8")
       .then(_.partialRight(marked, { renderer: renderer }))
       .then(html => _.assign(post, { bodyHtml: html }))
   ));
@@ -87,7 +88,7 @@ function assignBodyHtml (posts) {
  */
 function assignImages (posts) {
   return Q.all(_.map(posts, post =>
-    qReadDir(path.join(post.dir, "images"))
+    qFn.fsReadDir(path.join(post.dir, "images"))
       .then(images => _.assign(post, { images: images }))
   ));
 }
