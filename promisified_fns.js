@@ -12,5 +12,5 @@ module.exports = {
   rimraf: Q.nfbind(rmrf),
   fsExists: Q.nfbind(fs.exists),
   mkDirP: Q.nfbind(mkdirp),
-  fsWriteFile: Q.nfbind(fs.writeFile);
+  fsWriteFile: Q.nfbind(fs.writeFile)
 };

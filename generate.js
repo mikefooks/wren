@@ -1,42 +1,14 @@
 "use strict";
 
-let fs = require("fs"),
-  path = require("path"),
-  url = require("url"),
+let path = require("path"),
   _ = require("lodash"),
   Q = require("q"),
   gm = require("gm"),
-  marked = require("marked"),
   ejs = require("ejs"),
-  rimraf = require("rimraf"),
-  mkdirp = require("mkdirp"),
-  U = require("./utilities.js");
-
-let config = {
-  rootUrl: "http://localhost/blog",
-  responsiveImages: [
-    { size: "small", breakpoint: 0, width: 400 },
-    { size: "medium", breakpoint: 480, width: 600 },
-    { size: "large", breakpoint: 860, width: 1000 }
-  ]
-};
-
-let CWD = process.cwd(),
-  contentDir = path.join(CWD, "content"),
-  publicDir = path.join(CWD, "public"),
-  themeDir = path.join(CWD, "theme");
-
-let readFile = _.partialRight(fs.readFileSync, "utf8"),
-  parseJSON = _.flow(readFile, JSON.parse),
-  compileMarkdown = _.flow(readFile, marked);
-
-let qReadDir = Q.nfbind(fs.readdir),
-  qReadFile = Q.nfbind(fs.readFile),
-  qMkDir = Q.nfbind(fs.mkdir),
-  qRimraf = Q.nfbind(rimraf),
-  qFsExists = Q.nfbind(fs.exists),
-  qMkDirP = Q.nfbind(mkdirp),
-  qFsWriteFile = Q.nfbind(fs.writeFile);
+  config = require("./config.js"),
+  U = require("./utilities.js"),
+  qFn = require("./promisified_fns.js"),
+  compilePostCollection = require("./compile.js");
 
 let filters = {
   updated: posts => _.filter(posts, post => post.frontmatter.update),
@@ -45,139 +17,6 @@ let filters = {
 
 let imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
 
-let renderer = new marked.Renderer();
-
-/**
- * This mess is the img rendering function for marked; it replaces the
- * regular image rendering with a picture element and all the
- * source elements that it contains, based on the responsive image
- * settings enumerated in the config file.
- */
-renderer.image = function (href, title, text) {
-  let src = _.sortBy(config.responsiveImages, "breakpoint"),
-    img = src.splice(0, 1),
-    tags = _.map(src.reverse(), (props) =>
-      "<source srcset='" +
-      path.join("images", href.replace(imageRe, "_" + props.size + "$1")) +
-      "' media='(min-width: " + props.breakpoint + "px)'>");
-
-  tags.push("<img srcset='" +
-    path.join("images", href.replace(imageRe, "_" + img[0].size + "$1")) +
-    "' alt='" + text + "'/>\n"
-  );
-
-  return "<picture>\n" + tags.join("\n") + "</picture>\n";
-}
-
-marked.setOptions({
-  breaks: false,
-  gfm: true,
-  smartypants: true
-});
-
-/*
-  PROMISE-RETURNING FUNCTIONS
- */
-
-/**
- * Builds a collection of objects representing all the posts to be updated,
- * and all the necessary properties required to generate the html files
- * and directories for said posts.
- *
- * @param  {Array} posts  An array of directory names (strings) from the
- *                        content folder
- * @return {Q Promise}    A fulfilled promise whose value is a collection of
- *                        post objects.
- */
-function buildPostCollection (dirs) {
-  return Q.resolve(_.map(dirs, dir => ({ dir: path.join(contentDir, dir) })))
-    .then(assignFrontmatter)
-    .then(updateSlugs)
-    .then(assignTargetDir)
-    .then(assignBodyHtml)
-    .then(assignImages);
-}
-
-/**
- * Takes the collection of incipient post objects (just object containing
- * the .dir property) and assigns to each object its corresponding
- * frontmatter, parsed from the frontmatter.json file.
- * @param  { Array } posts    A collection of objects each containing a
- *                            .dir property.
- * @return { Q Promise }      A promise that resolves when all frontmatter.json
- *                            files have been read, parsed, and their contents
- *                            assigned to the appropriate post object.
- */
-function assignFrontmatter (posts) {
-  return Q.all(_.map(posts, post =>
-    qReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
-      .then(fm => {
-        let frontmatter = JSON.parse(fm);
-
-        frontmatter.created = new Date(frontmatter.created);
-        frontmatter.modified = new Date();
-
-        return _.assign(post, { frontmatter: frontmatter });
-      })
-  ));
-}
-
-/**
- * [assignTargetDir description]
- * @param  {[type]} posts [description]
- * @return {[type]}       [description]
- */
-function assignTargetDir (posts) {
-  return Q.resolve(_.map(posts, post =>
-    _.assign(post, { target: path.join(publicDir, post.frontmatter.slug) })
-  ));
-}
-
-function copyFile (source, target) {
-  return Q.Promise(function (resolve, reject) {
-    let reader = fs.createReadStream(source),
-      writer = fs.createWriteStream(target)
-
-    reader.on("end", function () {
-      resolve();
-    });
-
-    reader.pipe(writer)
-  });
-}
-
-function assignBodyHtml (posts) {
-  return Q.all(_.map(posts, post =>
-    qReadFile(path.join(post.dir, "main.md"), "utf8")
-      .then(_.partialRight(marked, { renderer: renderer }))
-      .then(html => _.assign(post, { bodyHtml: html }))
-  ));
-}
-
-/**
- * Takes a collection of post objects and returns a two-dimensional array
- * containing the names of all the images found in each post's image
- * directory.
- * @param  { Array } posts     A collection of post objects whose images we
- *                             would like to know.
- * @return { Q Promise }       returns a Q Promise that's resolved when the
- *                             contents of the image directories have been
- *                             successfully read.
- */
-function assignImages (posts) {
-  return Q.all(_.map(posts, post =>
-    qReadDir(path.join(post.dir, "images"))
-      .then(images => _.assign(post, { images: images }))
-  ));
-}
-
-function updateSlugs (posts) {
-  return Q.resolve(_.map(posts, post => {
-    post.frontmatter.slug = U.slugify(post.frontmatter.title);
-    return post;
-  }));
-}
-
 /**
  * Creates directories corresponding to a collection of updated post objects.
  * @param  { Array }  updated   A collection of updated post objects
@@ -185,7 +24,7 @@ function updateSlugs (posts) {
  *                            once all the new directories have been created.
  */
 function updatePublicDirs (updated) {
-  return Q.all(_.map(updated, post => qMkDirP(post.target)));
+  return Q.all(_.map(updated, post => qFn.mkDirP(post.target)));
 }
 
 /**
@@ -202,7 +41,7 @@ function writeUpdatedFrontmatter (updated) {
 
     frontmatter.update = false;
 
-    return qFsWriteFile(
+    return qFn.fsWriteFile(
       path.join(post.dir, "frontmatter.json"),
       JSON.stringify(frontmatter, null, '\t')
     );
@@ -218,19 +57,19 @@ function writeUpdatedFrontmatter (updated) {
  *                            been written to the public directory.
  */
 function generateIndex (posts) {
-  qReadFile(path.join(themeDir, "index.ejs"), "utf8")
+  qFn.fsReadFile(path.join(config.themeDir, "index.ejs"), "utf8")
     .then(template =>
-      qFsWriteFile(
-        path.join(publicDir, "index.html"),
+      qFn.fsWriteFile(
+        path.join(config.publicDir, "index.html"),
         ejs.compile(template)({ posts: posts, config: config })
     ));
 }
 
 function generatePosts (posts) {
-  qReadFile(path.join(themeDir, "post.ejs"), "utf8")
+  qFn.fsReadFile(path.join(config.themeDir, "post.ejs"), "utf8")
     .then(template =>
       Q.all(_.map(posts, post =>
-        qFsWriteFile(
+        qFn.fsWriteFile(
           path.join(post.target, "index.html"),
           ejs.compile(template)({ post: post, config: config })
         )
@@ -281,7 +120,7 @@ function generatePostImages (posts) {
 
       return _.reduce(factories,
         (current, pending) => current.then(pending),
-        qMkDirP(path.join(post.target, "images")));
+        qFn.mkDirP(path.join(post.target, "images")));
   }));
 }
 
@@ -290,8 +129,8 @@ function generatePostImages (posts) {
  */
 
 function generateUpdated () {
-  return qReadDir(contentDir)
-    .then(buildPostCollection)
+  return qFn.fsReadDir(config.contentDir)
+    .then(compilePostCollection)
     .tap(_.flow(filters.updated, generatePosts))
     .tap(_.flow(filters.updated, generatePostImages))
     .tap(_.flow(filters.updated, writeUpdatedFrontmatter))
@@ -300,10 +139,10 @@ function generateUpdated () {
 }
 
 function generateAll () {
-  return qReadDir(contentDir)
-    .then(_.flow(filters.notHidden, buildPostCollection))
-    .tap(_.partial(qRimraf, publicDir))
-    .tap(_.partial(qMkDirP, publicDir))
+  return qFn.fsReadDir(config.contentDir)
+    .then(_.flow(filters.notHidden, compilePostCollection))
+    .tap(_.partial(qFn.rimraf, config.publicDir))
+    .tap(_.partial(qFn.mkDirP, config.publicDir))
     .tap(updatePublicDirs)
     .tap(generateIndex)
     .tap(generatePosts)
@@ -311,11 +150,11 @@ function generateAll () {
     .tap(function (posts) {
       let re = /.css$/;
  
-      return qReadDir(themeDir)
+      return qFn.fsReadDir(config.themeDir)
         .then(_.partialRight(_.filter, file => re.test(file)))
         .then(function (files) {
           return Q.all(_.map(files, function (file) {
-            return copyFile(path.join(themeDir, file), path.join(publicDir, file));
+            return U.copyFile(path.join(config.themeDir, file), path.join(config.publicDir, file));
           }));
         });
     })

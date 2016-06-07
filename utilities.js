@@ -1,6 +1,8 @@
 "use strict";
 
-let _ = require("lodash");
+let _ = require("lodash"),
+  Q = require("q"),
+  fs = require("fs");
 
 /*
   UTILITIES
@@ -18,7 +20,22 @@ function nameContentFolder(frontmatter) {
   return [dateString, frontmatter.slug].join("_");
 }
 
+function copyFile (source, target) {
+  return Q.Promise(function (resolve, reject) {
+    let reader = fs.createReadStream(source),
+      writer = fs.createWriteStream(target)
+
+    reader.on("end", function () {
+      resolve();
+    });
+
+    reader.pipe(writer)
+  });
+}
+
+
 module.exports = {
   slugify,
-  nameContentFolder
+  nameContentFolder,
+  copyFile
 };

@@ -3,8 +3,17 @@
 let Q = require("q"),
   _ = require("lodash"),
   path = require("path"),
+  marked = require("marked"),
+  renderer = require("./renderer.js"),
+  config = require("./config.js"),
   qFn = require("./promisified_fns.js"),
   U = require("./utilities.js");
+
+marked.setOptions({
+  breaks: false,
+  gfm: true,
+  smartypants: true
+});
 
 /**
  * POST COMPILATION FUNCTIONS
@@ -21,7 +30,7 @@ let Q = require("q"),
  *                        post objects.
  */
 function compilePostCollection (dirs) {
-  return Q.resolve(_.map(dirs, dir => ({ dir: path.join(contentDir, dir) })))
+  return Q.resolve(_.map(dirs, dir => ({ dir: path.join(config.contentDir, dir) })))
     .then(assignFrontmatter)
     .then(updateSlugs)
     .then(assignTargetDir)
@@ -40,22 +49,22 @@ function compilePostCollection (dirs) {
  *                            assigned to the appropriate post object.
  */
 function assignFrontmatter (posts) {
-  return Q.all(_.map(posts, post =>
-    qFn.fsReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
-      .then(fm => {
+  return Q.all(_.map(posts, function (post) {
+    return qFn.fsReadFile(path.join(post.dir, "frontmatter.json"), "utf8")
+      .then(function (fm) {
         let frontmatter = JSON.parse(fm);
 
         frontmatter.created = new Date(frontmatter.created);
         frontmatter.modified = new Date();
 
-        return _.assign(post, { frontmatter: frontmatter });
-      })
-  ));
+        return _.assign(post, { frontmatter });
+      });
+  }));
 }
 
 function updateSlugs (posts) {
   return Q.resolve(_.map(posts, post => {
-    post.frontmatter.slug = U.slugify(post.title);
+    post.frontmatter.slug = U.slugify(post.frontmatter.title);
     return post;
   }));
 }
@@ -67,8 +76,8 @@ function updateSlugs (posts) {
  */
 function assignTargetDir (posts) {
   return Q.resolve(_.map(posts, post => {
-    _.assign(post, { target: path.join(publicDir, post.frontmatter.slug) })
-  ));
+    return _.assign(post, { target: path.join(config.publicDir, post.frontmatter.slug) })
+  }));
 }
 
 /**
