@@ -3,7 +3,8 @@
 let Q = require("q"),
   _ = require("lodash"),
   path = require("path"),
-  qFn = require("./promisified_fns.js");
+  qFn = require("./promisified_fns.js"),
+  U = require("./utilities.js");
 
 /**
  * POST COMPILATION FUNCTIONS
@@ -54,7 +55,7 @@ function assignFrontmatter (posts) {
 
 function updateSlugs (posts) {
   return Q.resolve(_.map(posts, post => {
-    post.frontmatter.slug = slufiy(post.title);
+    post.frontmatter.slug = U.slugify(post.title);
     return post;
   }));
 }

@@ -38,7 +38,8 @@ let qReadDir = Q.nfbind(fs.readdir),
   qFsWriteFile = Q.nfbind(fs.writeFile);
 
 let filters = {
-  updated: posts => _.filter(posts, post => post.frontmatter.update)
+  updated: posts => _.filter(posts, post => post.frontmatter.update),
+  notHidden: files => _.filter(files, file => !/^\./.test(file))
 };
 
 let imageRe = /(\.jpg|\.JPG|\.gif|\.GIF|\.png|\.PNG)$/;
@@ -299,7 +300,7 @@ function generateUpdated () {
 
 function generateAll () {
   return qReadDir(contentDir)
-    .then(buildPostCollection)
+    .then(_.flow(filters.notHidden, buildPostCollection))
     .tap(_.partial(qRimraf, publicDir))
     .tap(_.partial(qMkDirP, publicDir))
     .tap(updatePublicDirs)
