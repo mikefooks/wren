@@ -405,26 +405,38 @@ h1, h2, h3, h4, h5, h6, p, small {
 html, body {
   width: 100%; }
 
+body {
+  background-color: #bbb;
+  color: #222; }
+
 html {
   font-size: 1rem;
   line-height: 1.618rem;
-  font-family: "Roboto", sans-serif; }
+  font-family: "Quattrocento Sans", sans-serif; }
+
+h1, h3 {
+  font-family: "Roboto", sans-serif;
+  text-shadow: 0px 1px 1px #aaa; }
 
 h1 {
-  font-size: 6rem;
-  line-height: 4.854rem;
+  font-size: 4.23607rem;
+  line-height: 3.236rem;
   margin-top: 1.618rem;
   margin-left: 1.618rem; }
 
 h3 {
-  font-size: 3rem;
+  font-size: 2.61803rem;
   line-height: 3.236rem;
   margin-top: 1.618rem;
   text-align: right; }
 
-body {
-  background-color: #222;
-  color: #bbb; }
+small {
+  display: block;
+  text-align: right;
+  line-height: 3.236rem; }
+
+p:nth-of-type(n+2) {
+  text-indent: 3.236rem; }
 
 .container {
   margin: 0 auto; }

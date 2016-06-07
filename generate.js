@@ -9,7 +9,8 @@ let fs = require("fs"),
   marked = require("marked"),
   ejs = require("ejs"),
   rimraf = require("rimraf"),
-  mkdirp = require("mkdirp");
+  mkdirp = require("mkdirp"),
+  U = require("./utilities.js");
 
 let config = {
   rootUrl: "http://localhost/blog",
@@ -172,7 +173,7 @@ function assignImages (posts) {
 
 function updateSlugs (posts) {
   return Q.resolve(_.map(posts, post => {
-    post.frontmatter.slug = slugify(post.title);
+    post.frontmatter.slug = U.slugify(post.frontmatter.title);
     return post;
   }));
 }

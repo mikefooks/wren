@@ -1,5 +1,6 @@
 "use strict";
 
+let _ = require("lodash");
 
 /*
   UTILITIES
@@ -16,3 +17,8 @@ function nameContentFolder(frontmatter) {
 
   return [dateString, frontmatter.slug].join("_");
 }
+
+module.exports = {
+  slugify,
+  nameContentFolder
+};

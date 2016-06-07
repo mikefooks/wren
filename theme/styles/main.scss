@@ -1,6 +1,10 @@
 @import "bourbon/bourbon";
 @import "normalize";
 @import "vertical-rhythmic";
+@import "modular-scale";
+
+$ms-base: 1rem;
+$ms-ratio: $golden;
 
 * {
   box-sizing: border-box;
@@ -15,28 +19,45 @@ html, body {
   width: 100%;
 }
 
+body {
+  background-color: #bbb;
+  color: #222;
+}
+
 html {
   @include vr-baseline(1rem, 1.618rem);
+  font-family: "Quattrocento Sans", sans-serif;
+}
+
+h1, h3 {
   font-family: "Roboto", sans-serif;
+  text-shadow: 0px 1px 1px #aaa;
 }
 
 h1 {
-  font-size: 6rem;
-  line-height: vr(1rem, 3);
+  font-size: ms(3);
+  line-height: vr(1rem, 2);
   margin-top: vr(1rem, 1);
   margin-left: vr(1rem, 1);
 }
 
 h3 {
-  font-size: 3rem;
+  font-size: ms(2);
   line-height: vr(1rem, 2);
   margin-top: vr(1rem, 1);
   text-align: right;
 }
 
-body {
-  background-color: #222;
-  color: #bbb;
+small {
+  display: block;
+  text-align: right;
+  line-height: vr(1rem, 2);
+}
+
+p {
+  &:nth-of-type(n+2) {
+    text-indent: vr(1rem, 2);
+  }
 }
 
 .container {
