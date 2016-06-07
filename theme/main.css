@@ -415,17 +415,17 @@ html {
   font-family: "Quattrocento Sans", sans-serif; }
 
 h1, h3 {
-  font-family: "Roboto", sans-serif;
   text-shadow: 0px 1px 1px #aaa; }
 
 h1 {
-  font-size: 4.23607rem;
+  font-size: 3.99996rem;
   line-height: 3.236rem;
   margin-top: 1.618rem;
-  margin-left: 1.618rem; }
+  margin-left: 1.618rem;
+  letter-spacing: 0.53933rem; }
 
 h3 {
-  font-size: 2.61803rem;
+  font-size: 2.82841rem;
   line-height: 3.236rem;
   margin-top: 1.618rem;
   text-align: right; }
