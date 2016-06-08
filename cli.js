@@ -5,26 +5,13 @@ let path = require("path"),
   _ = require("lodash"),
   Q = require("q"),
   program = require("commander"),
-  G = require("./generate.js"),
-  mkdirp = require("mkdirp"),
-  rimraf = require("rimraf"),
-  uuid = require("node-uuid");
+  uuid = require("node-uuid"),
+  G = require("./lib/generate.js"),
+  U = require("./lib/utilities.js"),
+  qFn = require("./lib/promisified_fns.js"),
+  config = require("./config.js");
 
-let CWD = process.cwd();
-
-let qMkDirP = Q.nfbind(mkdirp),
-  qRimraf = Q.nfbind(rimraf),
-  qFsExists = Q.nfbind(fs.exists),
-  qFsReadFile = Q.nfbind(fs.readFile),
-  qFsWriteFile = Q.nfbind(fs.writeFile);
-
-let config = {
-  publicFolder: path.join(CWD, "public"),
-  contentFolder: path.join(CWD, "content"),
-  author: "Mike Fooks"
-};
-
-let contentDir = _.partial(path.join, config.contentFolder);
+let contentDir = _.partial(path.join, config.contentDir);
 
 program
   .version("0.0.1")
@@ -57,22 +44,6 @@ program
   .action(options => createNewPost(options.title));
 
 program.parse(process.argv);
-
-/*
-  UTILITIES
- */
-
-function slugify (str) {
-  return _.snakeCase(str.replace(/[^\w\s]/g, ""));
-}
-
-function nameContentFolder(frontmatter) {
-  let dateString = frontmatter.created
-    .substring(0, 10)
-    .replace(/\-/g, "_");
-
-  return [dateString, frontmatter.slug].join("_");
-}
 
 /*
  PROMISE-RETURNING FUNCTIONS
@@ -113,15 +84,15 @@ function checkContentDir () {
 
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
-    .tap(_.flow(nameContentFolder, contentDir, qMkDirP))
+    .tap(_.flow(U.nameContentFolder, contentDir, qMkDirP))
     .then(frontmatter =>
       Q.all([
-        qMkDirP(contentDir(nameContentFolder(frontmatter), "images")),
+        qMkDirP(contentDir(U.nameContentFolder(frontmatter), "images")),
         qFsWriteFile(
-          contentDir(nameContentFolder(frontmatter), "frontmatter.json"),
+          contentDir(U.nameContentFolder(frontmatter), "frontmatter.json"),
           JSON.stringify(frontmatter, null, '\t')),
         qFsWriteFile(
-          contentDir(nameContentFolder(frontmatter), "main.md"),
+          contentDir(U.nameContentFolder(frontmatter), "main.md"),
           "<!-- Write your post here! -->")
       ])
     );
