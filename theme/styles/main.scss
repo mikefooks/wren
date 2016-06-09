@@ -3,7 +3,7 @@
 @import "vertical-rhythmic";
 @import "modular-scale";
 
-$ms-base: 1rem;
+$ms-base: (2/3 * 1rem);
 $ms-ratio: $augmented-fourth;
 
 * {
@@ -26,7 +26,7 @@ body {
 
 html {
   @include vr-baseline(1rem, 1.618rem);
-  font-family: "Unna", serif;
+  font-family: "Source Sans Pro", sans-serif;
 }
 
 h1, h3 {
@@ -34,17 +34,17 @@ h1, h3 {
 }
 
 h1 {
-  font-size: ms(3);
+  font-size: ms(5);
   line-height: vr(1rem, 2);
   letter-spacing: vr(1rem, .25);
 
   &:nth-of-type(n+2) {
-    border-top: 1px #222 dotted;
+    border-top: 1px #eee dotted;
   } 
 }
 
 h3 {
-  font-size: ms(3);
+  font-size: ms(4);
   line-height: vr(1rem, 2);
   text-align: right;
 }

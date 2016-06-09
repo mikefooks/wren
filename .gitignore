@@ -7,3 +7,4 @@ theme/styles/bourbon/
 theme/styles/.sass-cache/
 *.swo
 content/
+*.swn
