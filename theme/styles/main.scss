@@ -26,7 +26,7 @@ body {
 
 html {
   @include vr-baseline(1rem, 1.618rem);
-  font-family: "Quattrocento Sans", sans-serif;
+  font-family: "Unna", serif;
 }
 
 h1, h3 {
@@ -34,40 +34,45 @@ h1, h3 {
 }
 
 h1 {
-  font-size: ms(4);
+  font-size: ms(3);
   line-height: vr(1rem, 2);
-  margin-top: vr(1rem, 1);
-  margin-left: vr(1rem, 1);
-  letter-spacing: vr(1rem, .333333);
+  letter-spacing: vr(1rem, .25);
+
+  &:nth-of-type(n+2) {
+    border-top: 1px #222 dotted;
+  } 
 }
 
 h3 {
   font-size: ms(3);
   line-height: vr(1rem, 2);
-  margin-top: vr(1rem, 1);
   text-align: right;
 }
 
 small {
   display: block;
   text-align: right;
+  font-size: ms(0);
   line-height: vr(1rem, 2);
 }
 
 p {
+  font-size: ms(1);
+  line-height: vr(1rem, 1);
+
   &:nth-of-type(n+2) {
     text-indent: vr(1rem, 2);
   }
 }
 
 .container {
-  margin: 0 auto;
+  margin: vr(1rem, 1);
 }
 
 .title {
   position: fixed;
-  left: 0;
-  top: 0;
+  left: vr(1rem, 1);
+  top: vr(1rem, 1);
 }
 
 .content {
