@@ -9,7 +9,7 @@ module.exports = {
     { size: "medium", breakpoint: 480, width: 600 },
     { size: "large", breakpoint: 860, width: 1000 }
   ],
-  contentDir: path.join(__dirname, "content"),
-  publicDir: path.join(__dirname, "public"),
-  themeDir: path.join(__dirname, "theme")
+  contentDir: path.join(__dirname, "content/"),
+  publicDir: path.join(__dirname, "public/"),
+  themeDir: path.join(__dirname, "theme/")
 };

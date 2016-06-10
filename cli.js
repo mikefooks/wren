@@ -4,11 +4,12 @@ let path = require("path"),
   fs = require("fs"),
   _ = require("lodash"),
   Q = require("q"),
+  qfs = require("q-io/fs"),
+  mkdirp = require("mkdirp"),
   program = require("commander"),
   uuid = require("node-uuid"),
   G = require("./lib/generate.js"),
   U = require("./lib/utilities.js"),
-  qFn = require("./lib/promisified_fns.js"),
   config = require("./config.js");
 
 let contentDir = _.partial(path.join, config.contentDir);
@@ -73,25 +74,16 @@ function createDefaultFrontMatter (title) {
   return Q.resolve(frontmatter);
 }
 
-function checkContentDir () {
-  return qFsExists(config.contentFolder)
-    .then(function (exists) {
-      if (!exists) {
-        return qMkDirP(config.contentFolder);
-      }
-    });
-}
-
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
-    .tap(_.flow(U.nameContentFolder, contentDir, qMkDirP))
+    .tap(_.flow(U.nameContentFolder, contentDir, Q.nfbind(mkdirp)))
     .then(frontmatter =>
       Q.all([
-        qMkDirP(contentDir(U.nameContentFolder(frontmatter), "images")),
-        qFsWriteFile(
+        Q.nfapply(mkdirp, contentDir(U.nameContentFolder(frontmatter), "images")),
+        qfs.write(
           contentDir(U.nameContentFolder(frontmatter), "frontmatter.json"),
           JSON.stringify(frontmatter, null, '\t')),
-        qFsWriteFile(
+        qfs.write(
           contentDir(U.nameContentFolder(frontmatter), "main.md"),
           "<!-- Write your post here! -->")
       ])
