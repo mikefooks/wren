@@ -1,11 +1,9 @@
 "use strict";
 
 let path = require("path"),
-  fs = require("fs"),
   _ = require("lodash"),
   Q = require("q"),
   qfs = require("q-io/fs"),
-  mkdirp = require("mkdirp"),
   program = require("commander"),
   uuid = require("node-uuid"),
   G = require("./lib/generate.js"),
@@ -64,7 +62,7 @@ function createDefaultFrontMatter (title) {
       id,
       title: title || "",
       author: config.author,
-      slug: title ? slugify(title) : id,
+      slug: title ? U.slugify(title) : id,
       created,
       modified: created,
       keywords: [],
@@ -76,30 +74,19 @@ function createDefaultFrontMatter (title) {
 
 function createNewPost (title) {
   return createDefaultFrontMatter(title)
-    .tap(_.flow(U.nameContentFolder, contentDir, Q.nfbind(mkdirp)))
-    .then(frontmatter =>
-      Q.all([
-        Q.nfapply(mkdirp, contentDir(U.nameContentFolder(frontmatter), "images")),
+    .then(frontmatter => {
+      let postDir = _.flow(U.nameContentFolder, contentDir)(frontmatter);
+      return [frontmatter, postDir];
+    })
+    .tap((args) => qfs.makeTree(args[1]))
+    .spread((frontmatter, postDir) => {
+      return Q.all([
         qfs.write(
-          contentDir(U.nameContentFolder(frontmatter), "frontmatter.json"),
+          path.join(postDir, "frontmatter.json"),
           JSON.stringify(frontmatter, null, '\t')),
         qfs.write(
-          contentDir(U.nameContentFolder(frontmatter), "main.md"),
+          path.join(postDir, "main.md"),
           "<!-- Write your post here! -->")
       ])
-    );
-}
-
-function deletePost (dir) {
-  let contentPath = path.join(config.contentFolder, dir);
-
-  return qFsReadFile(path.join(contentPath, "frontmatter.json"))
-    .then(fm => {
-      let slug = JSON.parse(fm).slug;
-
-      return Q.all([
-        qRimraf(contentPath),
-        qRimraf(path.join(config.publicFolder, slug))
-      ]);
     });
 }
