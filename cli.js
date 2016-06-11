@@ -88,5 +88,6 @@ function createNewPost (title) {
           path.join(postDir, "main.md"),
           "<!-- Write your post here! -->")
       ])
-    });
+    })
+    .fail(console.log);
 }
