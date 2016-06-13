@@ -5,23 +5,19 @@ let assert = require("chai").assert,
   path = require("path"),
   compile = require("../lib/compile.js");
 
-describe("lib/compile.js --- post compilation functions", function () {    
-  let contentDir = path.join(__dirname, "fixtures/mockposts/"),
-    postDirs; 
+describe("#__obtainContentDirs()", function () {    
+  let config = {
+    contentDir: path.join(__dirname, "fixtures/mockposts")
+  };
 
-  beforeEach(function () {
-    postDirs = qfs.list(contentDir);
-  }); 
-
-  it("#__obtainContentDirs()", function () {
-    postDirs
-      .then(compile.__obtainContentDirs)
+  it("returns a collection", function () {
+    return compile.__obtainContentDirs(config)
       .then(function (posts) {
-        console.log(posts);
-        assert.equals(posts.length, 1);
-      });
-  });
+        let postsAreObjects = posts.every(function (post) {
+          return typeof post == "object";
+        });
 
-  afterEach(function () {
+        assert.equal(postsAreObjects, true);
+      });
   });
 });
