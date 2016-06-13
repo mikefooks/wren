@@ -4,7 +4,9 @@
   "author": "Mike Fooks <mikefooks@gmail.com>",
   "private": true,
   "scripts": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^3.5.0"
+  },
   "dependencies": {
     "commander": "^2.8.1",
     "ejs": "^2.3.1",
