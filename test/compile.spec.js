@@ -17,22 +17,22 @@ describe("#__initializePostCollection()", function () {
   it("returns a collection", function () {
     return compile.__initializePostCollection(config)
       .then(function (posts) {
-        let postsAreObjects = posts.every(function (post) {
-          return typeof post == "object";
+        assert.isArray(posts);
+        return posts;
+      })
+      .then(function (posts) {
+        posts.forEach(function (post) {
+          assert.isObject(post);
         });
-
-        assert.equal(postsAreObjects, true);
       });
   });
 
   it("objects contain a 'dir' property", function () {
     return compile.__initializePostCollection(config)
       .then(function (posts) {
-        let containsDirProp = posts.every(function (post) {
-          return post.hasOwnProperty("dir") == true;
+        posts.forEach(function (post) {
+          assert.property(post, "dir");
         });
-
-        assert.equal(containsDirProp, true);
       });
   });
 
@@ -55,25 +55,21 @@ describe("#__assignFrontmatter()", function () {
   it("post objects have 'frontmatter' property", function () {
     return compile.__assignFrontmatter(postCollection)
       .then(function (posts) {
-        let postsHaveFrontmatter = posts.every(function (post) {
-          return post.hasOwnProperty("frontmatter");
+        return posts.forEach(function (post) {
+          assert.property(post, "frontmatter");
         });
-
-        assert.equal(postsHaveFrontmatter, true);
       });
   });  
 
   it("frontmatter has correct number of attributes", function () {
     return compile.__assignFrontmatter(postCollection)
       .then(function (posts) {
-        let correctFmProperties = posts.every(function (post) {
-          return Object.keys(post.frontmatter).length == 7;
+        return posts.forEach(function (post) {
+          assert.equal(Object.keys(post.frontmatter).length, 7);
         });
-
-        assert.equal(correctFmProperties, true);
       });
   });
-  
+
   after(function () {
     postCollection = undefined;
   }); 
