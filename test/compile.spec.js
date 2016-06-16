@@ -3,17 +3,12 @@
 let assert = require("chai").assert,
   qfs = require("q-io/fs"),
   path = require("path"),
-  compile = require("../lib/compile.js");
+  compile = require("../lib/compile.js"),
+  config = {
+    contentDir: path.join(__dirname, "fixtures/mockposts")
+  };
 
 describe("#__initializePostCollection()", function () {    
-  let config;
-
-  before(function () {
-    config = {
-      contentDir: path.join(__dirname, "fixtures/mockposts")
-    };
-  });
-
   it("returns a collection", function () {
     return compile.__initializePostCollection(config)
       .then(function (posts) {
@@ -34,10 +29,6 @@ describe("#__initializePostCollection()", function () {
           assert.property(post, "dir");
         });
       });
-  });
-
-  after(function () {
-    config = undefined;
   });
 });
 
