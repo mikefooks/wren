@@ -65,3 +65,33 @@ describe("#__assignFrontmatter()", function () {
     postCollection = undefined;
   }); 
 });
+
+describe("#__updateSlugs()", function () {
+  let postCollection;
+
+  beforeEach(function () {
+    postCollection = compile.__initializePostCollection(config)
+      .then(compile.__assignFrontmatter)
+      .then(function (posts) {
+        posts[0].frontmatter.title = "I Have Changed The Title";
+        return posts;
+      })
+      .then(compile.__updateSlugs);
+  });
+
+  it("returns a collection", function () {
+    return postCollection.then(function (posts) {
+      console.log(posts);
+      assert.isArray(posts);
+      return posts
+    }).then(function (posts) {
+      posts.forEach(function (post) {
+        assert.isObject(post);
+      }); 
+    });
+  });
+
+  after(function () {
+    postCollection = undefined;
+  });
+});
