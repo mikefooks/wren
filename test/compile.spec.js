@@ -75,23 +75,34 @@ describe("#__updateSlugs()", function () {
       .then(function (posts) {
         posts[0].frontmatter.title = "I Have Changed The Title";
         return posts;
-      })
-      .then(compile.__updateSlugs);
+      });
   });
 
   it("returns a collection", function () {
-    return postCollection.then(function (posts) {
-      console.log(posts);
-      assert.isArray(posts);
-      return posts
-    }).then(function (posts) {
-      posts.forEach(function (post) {
-        assert.isObject(post);
-      }); 
-    });
+    return postCollection
+      .then(compile.__updateSlugs)
+      .then(function (posts) {
+        assert.isArray(posts);
+        return posts
+      }).then(function (posts) {
+        posts.forEach(function (post) {
+          assert.isObject(post);
+        }); 
+      });
   });
 
-  after(function () {
+  it("Updates the slug based on the new title", function () {
+    return postCollection
+      .then(function (posts) {
+        assert.equal(posts[0].frontmatter.slug, "this_post_is_for_testing");
+        return posts
+      }).then(compile.__updateSlugs)
+      .then(function (posts) {
+        assert.equal(posts[0].frontmatter.slug, "i_have_changed_the_title");
+      });
+  });
+
+  afterEach(function () {
     postCollection = undefined;
   });
 });

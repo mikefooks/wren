@@ -18,23 +18,7 @@ program
 program
   .command("generate")
   .description("generates the site")
-  .option("-u, --updated", "regenerates only those posts with the 'update' attribute set to true")
-  .option("-a, --all", "Regenerates all the posts")
-  .action(function (options) {
-    if (options.updated && options.all) {
-      return console.log("please choose --updated or --all, but not both");
-    }
-
-    if (!options.updated && !options.all) {
-      return console.log("please choose either --updated or --all");
-    }
-    
-    if (options.all) {
-      G.generateAll();
-    } else if (options.updated) {
-      G.generateUpdated();
-    }
-  });
+  .action(G.generateAll);
 
 program
   .command("new")
