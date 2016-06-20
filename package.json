@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {},
   "devDependencies": {
-    "chai": "^3.5.0"
+    "chai": "^3.5.0",
+    "sinon": "^1.17.4"
   },
   "dependencies": {
     "commander": "^2.8.1",

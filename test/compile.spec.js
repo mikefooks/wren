@@ -1,6 +1,7 @@
 "use strict";
 
 let assert = require("chai").assert,
+  sinon = require("sinon"),
   qfs = require("q-io/fs"),
   path = require("path"),
   compile = require("../lib/compile.js"),
