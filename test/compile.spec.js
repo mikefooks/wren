@@ -2,6 +2,7 @@
 
 let assert = require("chai").assert,
   sinon = require("sinon"),
+  Q = require("q"),
   qfs = require("q-io/fs"),
   path = require("path"),
   compile = require("../lib/compile.js"),
@@ -9,18 +10,22 @@ let assert = require("chai").assert,
     contentDir: path.join(__dirname, "fixtures/mockposts")
   };
 
+function isCollection (p) {
+  return Q.resolve(p).then(function (coll) {
+    assert.isArray(coll);
+    return coll;
+  }).then(function (coll) {
+    coll.forEach(function (item) {
+      assert.isObject(item);
+    });
+    return coll;
+  });
+}
+
 describe("#__initializePostCollection()", function () {    
   it("returns a collection", function () {
     return compile.__initializePostCollection(config)
-      .then(function (posts) {
-        assert.isArray(posts);
-        return posts;
-      })
-      .then(function (posts) {
-        posts.forEach(function (post) {
-          assert.isObject(post);
-        });
-      });
+      .then(isCollection);
   });
 
   it("objects contain a 'dir' property", function () {
@@ -36,16 +41,17 @@ describe("#__initializePostCollection()", function () {
 describe("#__assignFrontmatter()", function () {
   let postCollection;
 
-  before(function () {
-    postCollection = [{
-      dir: path.join(__dirname,
-        "fixtures/mockposts",
-        "2016_06_13_this_post_is_for_testing")
-    }];  
+  beforeEach(function () {
+    postCollection = compile.__initializePostCollection(config);
+  });
+
+  it("returns a collection", function () {
+    return postCollection.then(compile.__assignFrontmatter)
+      .then(isCollection);
   });
 
   it("post objects have 'frontmatter' property", function () {
-    return compile.__assignFrontmatter(postCollection)
+    return postCollection.then(compile.__assignFrontmatter)
       .then(function (posts) {
         return posts.forEach(function (post) {
           assert.property(post, "frontmatter");
@@ -54,7 +60,7 @@ describe("#__assignFrontmatter()", function () {
   });  
 
   it("frontmatter has correct number of attributes", function () {
-    return compile.__assignFrontmatter(postCollection)
+    return postCollection.then(compile.__assignFrontmatter)
       .then(function (posts) {
         return posts.forEach(function (post) {
           assert.equal(Object.keys(post.frontmatter).length, 7);
@@ -62,7 +68,7 @@ describe("#__assignFrontmatter()", function () {
       });
   });
 
-  after(function () {
+  afterEach(function () {
     postCollection = undefined;
   }); 
 });
@@ -73,34 +79,44 @@ describe("#__updateSlugs()", function () {
   beforeEach(function () {
     postCollection = compile.__initializePostCollection(config)
       .then(compile.__assignFrontmatter)
-      .then(function (posts) {
-        posts[0].frontmatter.title = "I Have Changed The Title";
-        return posts;
-      });
   });
 
   it("returns a collection", function () {
     return postCollection
-      .then(compile.__updateSlugs)
       .then(function (posts) {
-        assert.isArray(posts);
-        return posts
-      }).then(function (posts) {
-        posts.forEach(function (post) {
-          assert.isObject(post);
-        }); 
-      });
+        posts[0].frontmatter.title = "I Have Changed The Title";
+        return posts;
+      })
+      .then(compile.__updateSlugs)
+      .then(isCollection);
   });
 
-  it("Updates the slug based on the new title", function () {
+  it("updates the slug based on the new title", function () {
     return postCollection
       .then(function (posts) {
         assert.equal(posts[0].frontmatter.slug, "this_post_is_for_testing");
         return posts
+      }).then(function (posts) {
+        posts[0].frontmatter.title = "I Have Changed The Title";
+        return posts;
       }).then(compile.__updateSlugs)
       .then(function (posts) {
         assert.equal(posts[0].frontmatter.slug, "i_have_changed_the_title");
       });
+  });
+
+  afterEach(function () {
+    postCollection = undefined;
+  });
+});
+
+describe("#__assignTargetDir()", function () {
+  let postCollection;
+
+  beforeEach(function () {
+    postCollection = compile.__initializePostCollection(config)
+      .then(compile.__assignFrontmatter)
+      .then(compile.__updateSlugs)
   });
 
   afterEach(function () {
