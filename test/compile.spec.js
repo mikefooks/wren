@@ -49,7 +49,8 @@ describe("#__assignFrontmatter()", function () {
   });
 
   it("returns a collection", function () {
-    return postCollection.then(compile.__assignFrontmatter)
+    return postCollection
+      .then(compile.__assignFrontmatter)
       .then(function (site) {
         return isCollection(site.posts);
       });
