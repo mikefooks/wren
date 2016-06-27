@@ -30,8 +30,8 @@ describe("#__initializePostCollection()", function () {
 
   it("objects contain a 'dir' property", function () {
     return compile.__initializePostCollection(config)
-      .then(function (posts) {
-        posts.forEach(function (post) {
+      .then(function (site) {
+        site.posts.forEach(function (post) {
           assert.property(post, "dir");
         });
       });
@@ -52,8 +52,8 @@ describe("#__assignFrontmatter()", function () {
 
   it("post objects have 'frontmatter' property", function () {
     return postCollection.then(compile.__assignFrontmatter)
-      .then(function (posts) {
-        return posts.forEach(function (post) {
+      .then(function (site) {
+        return site.posts.forEach(function (post) {
           assert.property(post, "frontmatter");
         });
       });
@@ -61,8 +61,8 @@ describe("#__assignFrontmatter()", function () {
 
   it("frontmatter has correct number of attributes", function () {
     return postCollection.then(compile.__assignFrontmatter)
-      .then(function (posts) {
-        return posts.forEach(function (post) {
+      .then(function (site) {
+        return site.posts.forEach(function (post) {
           assert.equal(Object.keys(post.frontmatter).length, 7);
         });
       });
@@ -83,9 +83,9 @@ describe("#__updateSlugs()", function () {
 
   it("returns a collection", function () {
     return postCollection
-      .then(function (posts) {
-        posts[0].frontmatter.title = "I Have Changed The Title";
-        return posts;
+      .then(function (site) {
+        site.posts[0].frontmatter.title = "I Have Changed The Title";
+        return site;
       })
       .then(compile.__updateSlugs)
       .then(isCollection);
@@ -93,15 +93,15 @@ describe("#__updateSlugs()", function () {
 
   it("updates the slug based on the new title", function () {
     return postCollection
-      .then(function (posts) {
-        assert.equal(posts[0].frontmatter.slug, "this_post_is_for_testing");
-        return posts
-      }).then(function (posts) {
-        posts[0].frontmatter.title = "I Have Changed The Title";
-        return posts;
+      .then(function (site) {
+        assert.equal(site.posts[0].frontmatter.slug, "this_post_is_for_testing");
+        return site
+      }).then(function (site) {
+        site.posts[0].frontmatter.title = "I Have Changed The Title";
+        return site;
       }).then(compile.__updateSlugs)
-      .then(function (posts) {
-        assert.equal(posts[0].frontmatter.slug, "i_have_changed_the_title");
+      .then(function (site) {
+        assert.equal(site.posts[0].frontmatter.slug, "i_have_changed_the_title");
       });
   });
 
@@ -117,6 +117,32 @@ describe("#__assignTargetDir()", function () {
     postCollection = compile.__initializePostCollection(config)
       .then(compile.__assignFrontmatter)
       .then(compile.__updateSlugs)
+  });
+
+  it("returns a collection", function () {
+    return postCollection
+      .then(compile.__assignTargetDir)
+      .then(isCollection);    
+  });
+
+  it("each post object has a 'target' property", function () {
+    return postCollection
+      .then(compile.__assignTargetDir)
+      .then(function (site) {
+        site.posts.forEach(function (post) {
+          assert.property(post, "target");
+        });
+      });
+  });
+
+  it("target property begins with config.publicDir", function () {
+    return postCollection
+      .then(compile.__assignTargetDir)
+      .then(function (site) {
+        site.posts.forEach(function (post) {
+          assert.match(post.target, new RegExp('^' + config.publicDir));
+        });
+      });
   });
 
   afterEach(function () {
