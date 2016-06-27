@@ -7,7 +7,8 @@ let assert = require("chai").assert,
   path = require("path"),
   compile = require("../lib/compile.js"),
   config = {
-    contentDir: path.join(__dirname, "fixtures/mockposts")
+    contentDir: path.join(__dirname, "fixtures/mockposts"),
+    publicDir: path.join(__dirname, "fakePublic")
   };
 
 function isCollection (p) {
@@ -25,14 +26,16 @@ function isCollection (p) {
 describe("#__initializePostCollection()", function () {    
   it("returns a collection", function () {
     return compile.__initializePostCollection(config)
-      .then(isCollection);
+      .then(function (site) {
+        return isCollection(site.posts);
+      });
   });
 
   it("objects contain a 'dir' property", function () {
     return compile.__initializePostCollection(config)
       .then(function (site) {
         site.posts.forEach(function (post) {
-          assert.property(post, "dir");
+          assert.property(post, "source");
         });
       });
   });
@@ -47,7 +50,9 @@ describe("#__assignFrontmatter()", function () {
 
   it("returns a collection", function () {
     return postCollection.then(compile.__assignFrontmatter)
-      .then(isCollection);
+      .then(function (site) {
+        return isCollection(site.posts);
+      });
   });
 
   it("post objects have 'frontmatter' property", function () {
@@ -88,7 +93,9 @@ describe("#__updateSlugs()", function () {
         return site;
       })
       .then(compile.__updateSlugs)
-      .then(isCollection);
+      .then(function (site) {
+        return isCollection(site.posts);
+      });
   });
 
   it("updates the slug based on the new title", function () {
@@ -119,28 +126,23 @@ describe("#__assignTargetDir()", function () {
       .then(compile.__updateSlugs)
   });
 
-  it("returns a collection", function () {
+  it("should do something", function () {
     return postCollection
       .then(compile.__assignTargetDir)
-      .then(isCollection);    
+      .then(function (site) {
+        return site;
+      })
+      .then(function (site) {
+        assert.isArray(site.posts);
+      });
   });
 
-  it("each post object has a 'target' property", function () {
+  it("each post object has a 'target property'", function () {
     return postCollection
       .then(compile.__assignTargetDir)
       .then(function (site) {
         site.posts.forEach(function (post) {
           assert.property(post, "target");
-        });
-      });
-  });
-
-  it("target property begins with config.publicDir", function () {
-    return postCollection
-      .then(compile.__assignTargetDir)
-      .then(function (site) {
-        site.posts.forEach(function (post) {
-          assert.match(post.target, new RegExp('^' + config.publicDir));
         });
       });
   });
