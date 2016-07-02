@@ -1,10 +1,10 @@
 node_modules/
-public/
+./public/
 *.JPG
 *.jpg
 *.swp
 theme/styles/bourbon/
 theme/styles/.sass-cache/
 *.swo
-content/
+./content/
 *.swn
