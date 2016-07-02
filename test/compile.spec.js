@@ -7,8 +7,8 @@ let assert = require("chai").assert,
   path = require("path"),
   compile = require("../lib/compile.js"),
   config = {
-    contentDir: path.join(__dirname, "fixtures/mockposts"),
-    publicDir: path.join(__dirname, "fakePublic")
+    contentDir: path.join(__dirname, "fixtures/content"),
+    publicDir: path.join(__dirname, "fixtures/public")
   };
 
 function isCollection (p) {
