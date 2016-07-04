@@ -3,6 +3,7 @@
 let path = require("path");
 
 module.exports = {
+  siteName: "Wren Blog",
   rootUrl: "http://localhost/blog",
   responsiveImages: [
     { size: "small", breakpoint: 0, width: 400 },
