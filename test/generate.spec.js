@@ -30,9 +30,10 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     it("creates an index page at the correct path", function () {
       return site
         .then(function (compiled) {
-          return qfs.stat(path.join(config.publicDir, "index.html"), function (stat) {
-            return assert.isOk(stat.isFile());
-          });
+          return qfs.isFile(path.join(config.publicDir, "index.html"))
+            .then(function (stat) {
+              assert.isOk(stat)
+            });
         });     
     });
 
@@ -41,11 +42,21 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
         .then(function (compiled) {
           return qfs.read(path.join(config.publicDir, "index.html"))
             .then(function (page) {
-              return assert.match(page, new RegExp("this_site_is_for_testing"));
+              assert.match(page, new RegExp("this_site_is_for_testing"));
+              assert.match(page, new RegExp("this_post_is_for_testing"));
             });
         });
     });
  
+    it("return value is properly formed site object", function () {
+      return site
+        .then(function (compiled) {
+          assert.isObject(compiled.config);
+          assert.isArray(compiled.posts);
+          assert.equal(Object.keys(compiled).length, 2);
+        });
+    });
+
     afterEach(function () {
       return qfs.removeTree(config.publicDir);
     });

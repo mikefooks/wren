@@ -9,6 +9,12 @@
   <div class="container">
     <div class="title">
       <h1><%= config.siteName %></h1>
+    </div>
+    <div class="postlinks">
+      <% posts.forEach(function (post) { %>
+        <a href="<%= post.frontmatter.slug %>"><h3><%= post.frontmatter.title %></h3></a>
+      <% }); %>
+    </div>
   </div>
 </body>
 </html>
