@@ -15,6 +15,44 @@ let assert = require("chai").assert,
 
 describe("generate.js --- HTML and Asset Generator Functions", function () {
 
+  describe("#__updatePublicDirs", function () {
+    let site;
+
+    beforeEach(function () {
+      site = compile(config)
+        .tap(function () {
+          return qfs.makeTree(config.publicDir);
+        })
+        .then(generate.__updatePublicDirs);
+    });
+
+    it("creates post directories in the public directory", function () {
+      return site
+        .then(function (compiled) {
+          return qfs.isDirectory(compiled.posts[0].target)
+            .then(function (stat) {
+              assert.isOk(stat);
+            });
+        });
+    });
+
+    it("post directories are named correctly", function () {
+      return site
+        .then(function (compiled) {
+          return qfs.list(config.publicDir)
+            .then(function (list) {
+              compiled.posts.forEach(function (post) {
+                assert.include(list, post.frontmatter.slug);
+              });
+            });
+        });
+    });
+
+    afterEach(function () {
+      return qfs.removeTree(config.publicDir);
+    });
+  });
+
   describe("#__generateIndex()", function () {
     let site,
       target;
@@ -61,4 +99,5 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
       return qfs.removeTree(config.publicDir);
     });
   });
+
 });
