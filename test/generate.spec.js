@@ -139,4 +139,41 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
       return qfs.removeTree(mockConfig.publicDir);
     });
   });
+
+  describe("#__copyAssets()", function () {
+    let site;
+
+    beforeEach(function () {
+      return site = compile(mockConfig)
+        .then(function (compiled) {
+          return qfs.makeTree(mockConfig.publicDir)
+            .then(() => compiled);
+        })
+        .then(generate.__copyAssets);
+    });
+
+    it("copies CSS files correctly", function () {
+      return site
+        .then(function (compiled) {
+          return qfs.stat(path.join(mockConfig.publicDir, "stylies.css"))
+            .then(function (stat) {
+              assert.isOk(stat.isFile());
+            });
+        });
+    });
+
+    it("copies JS files correctly", function () {
+      return site
+        .then(function (compiled) {
+          return qfs.stat(path.join(mockConfig.publicDir, "script.js"))
+            .then(function (stat) {
+              assert.isOk(stat.isFile());
+            });
+        });
+    });
+
+    afterEach(function () {
+      return qfs.removeTree(mockConfig.publicDir);
+    });
+  });
 });
