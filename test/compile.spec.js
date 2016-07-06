@@ -195,7 +195,7 @@ describe("compile.js --- Site Source Compilation Functions", function () {
         .then(compile.__assignBodyHtml)
         .then(function (site) {
           assert.isString(site.posts[0].bodyHtml);
-          assert.match(site.posts[0].bodyHtml, new RegExp("</h2>"));
+          assert.match(site.posts[0].bodyHtml, new RegExp("this_post_is_so_cool"));
         });
     });
 

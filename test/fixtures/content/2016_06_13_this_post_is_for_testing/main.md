@@ -1,3 +1,1 @@
-## Hooray!
-
-Tests are so much fun!
+this_post_is_so_cool

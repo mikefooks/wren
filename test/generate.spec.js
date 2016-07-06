@@ -6,7 +6,7 @@ let assert = require("chai").assert,
   path = require("path"),
   compile = require("../lib/compile.js").compilePostCollection,
   generate = require("../lib/generate.js"),
-  config = {
+  mockConfig = {
     siteName: "this_site_is_for_testing",
     contentDir: path.join(__dirname, "fixtures/content"),
     themeDir: path.join(__dirname, "fixtures/theme"),
@@ -19,9 +19,10 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     let site;
 
     beforeEach(function () {
-      site = compile(config)
-        .tap(function () {
-          return qfs.makeTree(config.publicDir);
+      site = compile(mockConfig)
+        .then(function (compiled) {
+          return qfs.makeTree(mockConfig.publicDir)
+            .then(() => compiled);
         })
         .then(generate.__updatePublicDirs);
     });
@@ -39,7 +40,7 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     it("post directories are named correctly", function () {
       return site
         .then(function (compiled) {
-          return qfs.list(config.publicDir)
+          return qfs.list(mockConfig.publicDir)
             .then(function (list) {
               compiled.posts.forEach(function (post) {
                 assert.include(list, post.frontmatter.slug);
@@ -49,7 +50,7 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     });
 
     afterEach(function () {
-      return qfs.removeTree(config.publicDir);
+      return qfs.removeTree(mockConfig.publicDir);
     });
   });
 
@@ -58,9 +59,10 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
       target;
  
     beforeEach(function () {
-      site = compile(config)
-        .tap(function (compiled) {
-          return qfs.makeTree(config.publicDir);
+      site = compile(mockConfig)
+        .then(function (compiled) {
+          return qfs.makeTree(mockConfig.publicDir)
+            .then(() => compiled);
         })
         .then(generate.__generateIndex);
     });
@@ -68,7 +70,7 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     it("creates an index page at the correct path", function () {
       return site
         .then(function (compiled) {
-          return qfs.isFile(path.join(config.publicDir, "index.html"))
+          return qfs.isFile(path.join(mockConfig.publicDir, "index.html"))
             .then(function (stat) {
               assert.isOk(stat)
             });
@@ -78,7 +80,7 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     it("index page contains the correct values", function () {
       return site
         .then(function (compiled) {
-          return qfs.read(path.join(config.publicDir, "index.html"))
+          return qfs.read(path.join(mockConfig.publicDir, "index.html"))
             .then(function (page) {
               assert.match(page, new RegExp("this_site_is_for_testing"));
               assert.match(page, new RegExp("this_post_is_for_testing"));
@@ -96,8 +98,45 @@ describe("generate.js --- HTML and Asset Generator Functions", function () {
     });
 
     afterEach(function () {
-      return qfs.removeTree(config.publicDir);
+      return qfs.removeTree(mockConfig.publicDir);
     });
   });
 
+  describe("#__generatePosts()", function () {
+    let site;
+
+    beforeEach(function () {
+      return site = compile(mockConfig)
+        .then(function (compiled) {
+          return qfs.makeTree(mockConfig.publicDir)
+            .then(() => compiled);
+        })
+        .then(generate.__updatePublicDirs)
+        .then(generate.__generatePosts);
+    });
+
+    it("generates index.html in each post directory", function () {
+      return site
+        .then(function (compiled) {
+          return qfs.stat(path.join(compiled.posts[0].target, "index.html"))
+            .then(function (stat) {
+              assert.isOk(stat.isFile());
+            });
+        });
+    });
+
+    it("post index.html has the correct content", function () {
+      return site
+        .then(function (compiled) {
+          return qfs.read(path.join(compiled.posts[0].target, "index.html"))
+            .then(function (page) {
+              assert.match(page, new RegExp("this_post_is_so_cool"));
+            });
+        }); 
+    });
+
+    afterEach(function () {
+      return qfs.removeTree(mockConfig.publicDir);
+    });
+  });
 });
