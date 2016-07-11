@@ -22,6 +22,7 @@ function isCollection (p) {
     return coll;
   });
 }
+
 describe("compile.js --- Site Source Compilation Functions", function () {
   describe("#__initializePostCollection()", function () {    
     it("returns a collection", function () {
