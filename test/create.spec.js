@@ -1,6 +1,7 @@
 "use strict";
 
 let assert = require("chai").assert,
+  qfs = require("q-io/fs"),
   path = require("path"),
   create = require("../lib/create.js"),
   config = {
@@ -10,7 +11,7 @@ let assert = require("chai").assert,
   };
 
 describe("create.js --- New post creation functions", function () {
-  describe("#__createDefaultFrontmatter", function () {
+  describe("#__createDefaultFrontmatter()", function () {
     it("returns a promise for an object", function () {
       return create.__createDefaultFrontmatter(config, "check it out!")
         .then(function (post) {
@@ -31,6 +32,35 @@ describe("create.js --- New post creation functions", function () {
         .then(function (post) {
           assert.equal(post.frontmatter.author, "Bill Testsalot");
           assert.isString(post.frontmatter.created);
+        });
+    });
+  });
+  describe("#createNewPost()", function () {
+    let newPost;
+
+    beforeEach(function () {
+      newPost = create.createNewPost(config, "Hey, A Post");
+    });
+
+    it("returns a properly formed post object", function () {
+      return newPost.then(function (post) {
+        assert.isObject(post);
+      });
+    });
+
+    it("creates a new directory in the content directory", function () {
+      return newPost.then(function (post) {
+        return qfs.stat(path.join(config.contentDir, "2016_07_12_hey_a_post"))
+          .then(function (stat) {
+            assert.isOk(stat);
+          });
+      });
+    });
+
+    afterEach(function () {
+      qfs.removeTree(path.join(config.contentDir, "2016_07_12_hey_a_post"))
+        .then(function () {
+          post = undefined;
         });
     });
   });
