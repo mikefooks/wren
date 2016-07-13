@@ -35,11 +35,17 @@ describe("create.js --- New post creation functions", function () {
         });
     });
   });
+
   describe("#createNewPost()", function () {
-    let newPost;
+    let newPost,
+      postDir;
 
     beforeEach(function () {
-      newPost = create.createNewPost(config, "Hey, A Post");
+      newPost = create.createNewPost(config, "Hey, A Post")
+        .then(function (post) {
+          postDir = create.__nameContentDir(post.frontmatter);
+          return post;
+        });
     });
 
     it("returns a properly formed post object", function () {
@@ -50,17 +56,36 @@ describe("create.js --- New post creation functions", function () {
 
     it("creates a new directory in the content directory", function () {
       return newPost.then(function (post) {
-        return qfs.stat(path.join(config.contentDir, "2016_07_12_hey_a_post"))
+        return qfs.stat(path.join(config.contentDir, postDir))
           .then(function (stat) {
-            assert.isOk(stat);
+            assert.isOk(stat.isDirectory())
+          });
+      });
+    });
+
+    it("creates the default frontmatter.json in the post directory", function () {
+      return newPost.then(function (post) {
+        return qfs.stat(path.join(config.contentDir, postDir, "frontmatter.json"))
+          .then(function (stat) {
+            assert.isOk(stat.isFile());
+          });
+      });
+    });
+
+    it("creates the blank markdown file in the post directory", function () {
+      return newPost.then(function (post) {
+        return qfs.stat(path.join(config.contentDir, postDir, "main.md"))
+          .then(function (stat) {
+            assert.isOk(stat.isFile());
           });
       });
     });
 
     afterEach(function () {
-      qfs.removeTree(path.join(config.contentDir, "2016_07_12_hey_a_post"))
+      qfs.removeTree(path.join(config.contentDir, postDir))
         .then(function () {
-          post = undefined;
+          newPost = undefined;
+          postDir = undefined;
         });
     });
   });
