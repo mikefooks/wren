@@ -6,10 +6,6 @@
   <title>mikefooks.com</title>
   <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro' rel='stylesheet' type='text/css' />
   <link rel="stylesheet" href="../main.css" />
-  <script>
-    document.createElement("picture");
-  </script>
-  <script src="../picturefill.min.js" async></script>
 </head>
 <body>
   <div class="container">
@@ -18,7 +14,7 @@
     </div>
     <div class="content">
       <h3><%= post.frontmatter.title %></h3>
-      <small><%= post.frontmatter.created.toString() %></small>
+      <small><%= post.frontmatter.modified.toString() %></small>
       <%- post.bodyHtml %>
     </div>
   </div>
