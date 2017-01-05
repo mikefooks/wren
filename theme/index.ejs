@@ -10,13 +10,15 @@
 <body>
   <div class="container">
     <div class="title">
-      <h1>mike</h1><h1>fooks</h1><h1>.com</h1>
+      <img src="logo.svg" />
     </div>
     <% posts.forEach(function (post) { %>
       <div class="content">
-        <a href="/<%= post.frontmatter.slug %>/"><h3><%= post.frontmatter.title %></h3></a>
+        <a href="/<%= post.frontmatter.slug %>/"><h2><%= post.frontmatter.title %></h2></a>
+	<small><%= post.frontmatter.created.toString() %></small>
+	<p>Blah blah blah blah blah blah <a href="/<%= post.frontmatter.slug %>/">... (read more)</a>
       </div>
     <% }); %>
   </div>
 </body>
-</html>0
+</html>

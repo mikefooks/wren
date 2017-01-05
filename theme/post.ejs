@@ -10,11 +10,11 @@
 <body>
   <div class="container">
     <div class="title">
-      <h1>mike</h1><h1>fooks</h1><h1>.com</h1>
+      <img src="../logo.svg" />
     </div>
     <div class="content">
-      <h3><%= post.frontmatter.title %></h3>
-      <small><%= post.frontmatter.modified.toString() %></small>
+      <h2><%= post.frontmatter.title %></h2>
+      <small><%= post.frontmatter.created.toString() %></small>
       <%- post.bodyHtml %>
     </div>
   </div>

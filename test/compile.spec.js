@@ -11,8 +11,8 @@ let assert = require("chai").assert,
     publicDir: path.join(__dirname, "fixtures/public")
   };
 
-function isCollection (p) {
-  return Q.resolve(p).then(function (coll) {
+function isCollection (posts) {
+  return Q.resolve(posts).then(function (coll) {
     assert.isArray(coll);
     return coll;
   }).then(function (coll) {

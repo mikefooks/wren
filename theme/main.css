@@ -406,8 +406,8 @@ html, body {
   width: 100%; }
 
 body {
-  background-color: #bbb;
-  color: #222; }
+  background-color: #222;
+  color: #eee; }
 
 html {
   font-size: 1rem;
@@ -415,16 +415,14 @@ html {
   font-family: "Source Sans Pro", sans-serif; }
 
 h1, h3 {
-  text-shadow: 0px 1px 1px #aaa; }
+  text-shadow: 0px 1px 1px #111; }
 
 h1 {
   font-size: 3.77119rem;
   line-height: 3.236rem;
   letter-spacing: 0.4045rem; }
-  h1:nth-of-type(n+2) {
-    border-top: 1px #eee dotted; }
 
-h3 {
+h2 {
   font-size: 2.66664rem;
   line-height: 3.236rem;
   text-align: right; }
@@ -441,6 +439,13 @@ p {
   p:nth-of-type(n+2) {
     text-indent: 3.236rem; }
 
+a {
+  text-decoration: none; }
+  a:link {
+    color: #eee; }
+  a:visited {
+    color: #ddd; }
+
 .container {
   margin: 1.618rem; }
 
@@ -451,7 +456,10 @@ p {
 
 .content {
   position: relative;
-  width: 40%;
-  margin: 0 auto; }
+  width: 50%;
+  margin: 0.4045rem auto;
+  padding: 0.809rem 1.618rem;
+  height: 9.708rem;
+  background-color: #444; }
 
 /*# sourceMappingURL=main.css.map */
