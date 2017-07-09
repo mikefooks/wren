@@ -8,4 +8,4 @@ theme/styles/.sass-cache/
 *.swo
 ./content/
 *.swn
-theme/main.cc
+theme/main.css
